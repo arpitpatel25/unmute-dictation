@@ -41,3 +41,13 @@ export const JUNK_DETECTION = {
 
 // ─── Request timeout for a single Groq call ───
 export const REQUEST_TIMEOUT_MS = 15_000
+
+// ─── Cloud→local fallback ───
+// Shorter budget for the cloud transcription attempt before falling back to the
+// on-device model. A genuine error returns fast; this caps how long a network
+// hang can stall before we switch.
+export const STT_CLOUD_TIMEOUT_MS = 8_000
+
+// Kill the idle on-device whisper server after this long with no transcription,
+// so it doesn't hold the model in RAM between bursts of use.
+export const LOCAL_STT_IDLE_SHUTDOWN_MS = 5 * 60 * 1_000

@@ -4,6 +4,7 @@ import path from 'path'
 import fs from 'fs'
 import https from 'https'
 import http from 'http'
+import { LOCAL_STT_IDLE_SHUTDOWN_MS } from './config'
 
 const MODEL_URL = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en.bin'
 const MODEL_FILENAME = 'ggml-tiny.en.bin'
@@ -18,6 +19,23 @@ class WhisperManager {
   private serverProcess: ChildProcess | null = null
   private serverReady = false
   private serverStarting = false
+  private idleTimer: ReturnType<typeof setTimeout> | null = null
+
+  /** Whether the on-device fallback can run right now (binary + model present). */
+  isAvailable(): boolean {
+    return this.isBinaryReady() && this.isModelReady()
+  }
+
+  /** Reset the idle-shutdown timer — called after each transcription. */
+  private touchIdle(): void {
+    if (this.idleTimer) clearTimeout(this.idleTimer)
+    this.idleTimer = setTimeout(() => {
+      if (this.isServerRunning()) {
+        console.log('[whisper] Idle timeout — shutting down on-device server to free memory')
+        this.stopServer()
+      }
+    }, LOCAL_STT_IDLE_SHUTDOWN_MS)
+  }
 
   private getModelsDir(): string {
     if (!this.modelsDir) {
@@ -226,6 +244,10 @@ class WhisperManager {
 
   /** Stop the persistent server. Call on app quit. */
   stopServer(): void {
+    if (this.idleTimer) {
+      clearTimeout(this.idleTimer)
+      this.idleTimer = null
+    }
     if (this.serverProcess) {
       console.log('[whisper] Stopping server...')
       this.serverProcess.kill('SIGTERM')
@@ -327,6 +349,9 @@ class WhisperManager {
    * Sends the raw WebM/Opus buffer directly — server handles conversion via --convert.
    */
   async transcribe(audioBuffer: Buffer): Promise<string> {
+    // Keep the server alive while in active use; idle timer kills it later
+    this.touchIdle()
+
     // If server is running, use it (fast path — no model loading)
     if (this.isServerRunning()) {
       return this.transcribeViaServer(audioBuffer)

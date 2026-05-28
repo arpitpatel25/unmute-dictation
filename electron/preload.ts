@@ -54,6 +54,9 @@ const electronAPI = {
   onSessionTooShort: (callback: () => void) => {
     ipcRenderer.on('session:too-short', () => callback())
   },
+  onEngineNotice: (callback: (reason: string) => void) => {
+    ipcRenderer.on('session:engine-notice', (_event, reason) => callback(reason))
+  },
   sendAudioDiscarded: (mode: 'dictation' | 'instruction') => {
     ipcRenderer.send('audio:discarded', mode)
   },

@@ -185,8 +185,10 @@ async function retrySessionFromAudio(sessionId: string): Promise<void> {
     // 3. Notify renderer: retry started
     mainWindow.webContents.send('session:retry-status', sessionId, 'processing')
 
-    // 4. Require a Groq API key
-    if (!hasApiKey()) throw new Error('No Groq API key set. Add your key in Settings.')
+    // 4. Need either a Groq key or the on-device model for transcription
+    if (!hasApiKey() && !whisperManager.isAvailable()) {
+      throw new Error('Add a Groq key in Settings, or wait for the on-device model to finish downloading.')
+    }
     const authToken = sessionManager.getAuthToken()
 
     // 5. Transcribe audio using current STT provider
@@ -755,50 +757,26 @@ app.whenReady().then(() => {
     console.error('[main] setupKeyboard failed (app will still work, but hotkeys disabled):', err instanceof Error ? err.message : err)
   }
 
-  // Pre-download whisper model and start persistent server (only when local models enabled)
+  // Pre-download the on-device whisper model in the background so the cloud→local
+  // fallback (and no-key mode) is ready when needed. The server is NOT started
+  // here — it starts lazily on the first transcription and idle-shuts-down after.
+  if (whisperManager.isBinaryReady() && !whisperManager.isModelReady()) {
+    console.log('[main] Pre-downloading on-device model for fallback...')
+    whisperManager.downloadModel((progress) => {
+      if (progress % 25 === 0 || progress === 100) console.log(`[main] On-device model download: ${progress}%`)
+    }).catch((err) => {
+      console.warn('[main] On-device model pre-download failed (will retry on demand):', err instanceof Error ? err.message : err)
+    })
+  }
+
+  // Dev-selected local providers (gated): start their servers eagerly.
   if (features.localModels) {
-    const startWhisperServer = async () => {
-      try {
-        await whisperManager.startServer()
-      } catch (err) {
-        console.warn('[main] Whisper server start failed (will use CLI fallback):', err instanceof Error ? err.message : err)
-      }
-    }
-
-    if (!whisperManager.isModelReady()) {
-      console.log('[main] Whisper model not found — downloading in background...')
-      whisperManager.downloadModel((progress) => {
-        if (progress % 25 === 0 || progress === 100) {
-          console.log(`[main] Whisper model download: ${progress}%`)
-        }
-      }).then(() => {
-        console.log('[main] Whisper model download complete — starting server...')
-        startWhisperServer()
-      }).catch((err) => {
-        console.warn('[main] Whisper model download failed (will retry on demand):', err instanceof Error ? err.message : err)
-      })
-    } else {
-      console.log('[main] Whisper model already available — starting server...')
-      startWhisperServer()
-    }
-
-    // Auto-start faster-whisper server if it's the selected STT provider
     if (sessionManager.getSTTProvider() === 'faster-whisper' && fasterWhisperManager.isReady()) {
-      console.log('[main] faster-whisper is selected STT provider — starting server...')
-      fasterWhisperManager.startServer().catch((err) => {
-        console.warn('[main] faster-whisper server start failed:', err instanceof Error ? err.message : err)
-      })
+      fasterWhisperManager.startServer().catch((err) => console.warn('[main] faster-whisper server start failed:', err instanceof Error ? err.message : err))
     }
-
-    // Auto-start local LLM server if it's the selected LLM provider and model + binary are ready
     if (sessionManager.getLLMProvider() === 'local-llm' && localLLMManager.isModelReady() && localLLMManager.isBinaryReady()) {
-      console.log('[main] local-llm is selected LLM provider — starting server...')
-      localLLMManager.startServer().catch((err) => {
-        console.warn('[main] local LLM server start failed:', err instanceof Error ? err.message : err)
-      })
+      localLLMManager.startServer().catch((err) => console.warn('[main] local LLM server start failed:', err instanceof Error ? err.message : err))
     }
-  } else {
-    console.log('[main] features.localModels=false — skipping all local model auto-start')
   }
 
   app.on('activate', () => {

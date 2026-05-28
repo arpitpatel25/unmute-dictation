@@ -100,6 +100,10 @@ class SessionManager {
   private isProcessing = false
   private abortController: AbortController | null = null
 
+  // True once we've told the user this session is using the on-device model
+  // (so the notice fires once, not per chunk).
+  private fallbackNotified = false
+
   // Tracks whether an instruction recording was started in this session.
   // Used by processSession() to know it should wait for instruction audio IPC
   // before determining flow type and processing.
@@ -144,6 +148,14 @@ class SessionManager {
   /** Whether a session is currently being processed (API calls in flight) */
   get processing(): boolean {
     return this.isProcessing
+  }
+
+  /** Tell the HUD this session switched to the on-device model (once per session). */
+  private notifyEngineFallback(reason: string): void {
+    if (this.fallbackNotified) return
+    this.fallbackNotified = true
+    console.log('[session] 🟡 Using on-device model —', reason)
+    sendToWidget('session:engine-notice', reason)
   }
 
   getAuthToken(): string | null {
@@ -483,12 +495,13 @@ class SessionManager {
       } else if (useLocalWhisper) {
         transcript = await whisperManager.transcribe(buffer)
       } else {
-        if (!hasApiKey()) throw new Error('No Groq API key set. Add your key in Settings.')
+        // pipelineTranscribe handles cloud→on-device fallback (and no-key→on-device)
         const cloudProvider = useSarvam ? 'sarvam' as const : useCartesia ? 'cartesia' as const : 'groq' as const
         transcript = await pipelineTranscribe(buffer, this.authToken, {
           sttProvider: cloudProvider,
           sttEndpoint: this.sttEndpoint,
           sttLanguage: this.getEffectiveSTTLanguage(),
+          onFallback: (reason) => this.notifyEngineFallback(reason),
         })
       }
 
@@ -580,6 +593,7 @@ class SessionManager {
       return
     }
     this.isProcessing = true
+    this.fallbackNotified = false
     console.log('[session] 🔒 isProcessing = TRUE')
 
     // Guard: no audio received (rapid double-press or too-short recording)
@@ -650,8 +664,8 @@ class SessionManager {
     }, timeoutMs)
 
     try {
-      if (!hasApiKey()) {
-        throw new Error('No Groq API key set. Add your key in Settings.')
+      if (!hasApiKey() && !whisperManager.isAvailable()) {
+        throw new Error('Add a Groq key in Settings, or wait for the on-device model to finish downloading.')
       }
 
       session.flowType = this.determineFlowType(session)
@@ -689,7 +703,7 @@ class SessionManager {
             const transcript = await pipelineTranscribe(
               session.dictationAudio!,
               this.authToken,
-              { sttProvider, sttEndpoint: this.sttEndpoint, sttLanguage: this.getEffectiveSTTLanguage() },
+              { sttProvider, sttEndpoint: this.sttEndpoint, sttLanguage: this.getEffectiveSTTLanguage(), onFallback: (r) => this.notifyEngineFallback(r) },
               controller.signal
             )
             const tPostFetch = Date.now()
@@ -760,6 +774,7 @@ class SessionManager {
               sttEndpoint: this.sttEndpoint,
               sttLanguage: this.getEffectiveSTTLanguage(),
               inputLanguage: this.inputLanguage,
+              onFallback: (r) => this.notifyEngineFallback(r),
             },
             controller.signal
           )
@@ -979,6 +994,7 @@ class SessionManager {
             sttProvider: cloudProvider,
             sttEndpoint: this.sttEndpoint,
             sttLanguage: this.getEffectiveSTTLanguage(),
+            onFallback: (r) => this.notifyEngineFallback(r),
           }, controller.signal)
         }
         transcribeMs += Date.now() - t0

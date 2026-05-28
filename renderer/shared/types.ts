@@ -40,6 +40,7 @@ export interface ElectronAPI {
   onSessionCancelled: (callback: () => void) => void
   onProcessingDiscardHint: (callback: () => void) => void
   onSessionTooShort: (callback: () => void) => void
+  onEngineNotice: (callback: (reason: string) => void) => void
   sendAudioDiscarded: (mode: 'dictation' | 'instruction') => void
   sendQuotaBlocked: () => void
   getGroqKeyStatus: () => Promise<{ hasKey: boolean; masked: string | null }>

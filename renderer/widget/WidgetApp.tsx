@@ -50,6 +50,7 @@ export default function WidgetApp() {
   const [outputPreview, setOutputPreview] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [showDiscardHint, setShowDiscardHint] = useState(false)
+  const [engineNotice, setEngineNotice] = useState<string | null>(null)
   const { analyserNode, maxDurationSeconds, startRecording, stopRecording } = useAudioRecorder()
 
   // Track auto-hide timer so it can be cancelled when a new recording starts
@@ -90,17 +91,8 @@ export default function WidgetApp() {
       // Cancel any pending auto-hide from a previous session
       clearAutoHide()
 
-      // Pre-check quota before showing recording UI
-      try {
-        const quota = await api.getQuota() as Record<string, unknown> | null
-        if (quota && typeof quota.max_recording_seconds === 'number' && quota.max_recording_seconds < 5) {
-          playClickSound('stop')
-          api.sendQuotaBlocked()
-          return
-        }
-      } catch { /* fail-open — let recording proceed */ }
-
       playClickSound('start')
+      setEngineNotice(null)
       setState(mode === 'dictation' ? 'dictation-active' : 'instruction-active')
       try {
         await startRecording(undefined, mode)
@@ -157,6 +149,11 @@ export default function WidgetApp() {
       setShowDiscardHint(false)
     })
 
+    api.onEngineNotice((reason) => {
+      // STT switched to the on-device model for this session
+      setEngineNotice(reason)
+    })
+
     return () => {
       api.removeAllListeners('recording:start')
       api.removeAllListeners('recording:stop')
@@ -166,6 +163,7 @@ export default function WidgetApp() {
       api.removeAllListeners('session:cancelled')
       api.removeAllListeners('processing:show-discard-hint')
       api.removeAllListeners('session:too-short')
+      api.removeAllListeners('session:engine-notice')
     }
   }, [startRecording, stopRecording, clearAutoHide, scheduleAutoHide])
 
@@ -198,6 +196,7 @@ export default function WidgetApp() {
         outputPreview={outputPreview}
         errorMessage={errorMessage}
         showDiscardHint={showDiscardHint}
+        engineNotice={engineNotice}
         onCancel={handleCancel}
         onStop={handleStop}
         onUndo={handleUndo}

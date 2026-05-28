@@ -4,10 +4,81 @@
 // via groq.ts. Signatures are preserved so sessionManager/main need minimal change.
 // The `authToken` parameter is vestigial (kept to avoid churn) and ignored.
 
-import { groqTranscribe, groqChat, type ChatMessage as GroqMessage } from './groq'
+import { groqTranscribe, groqChat, NoApiKeyError, type ChatMessage as GroqMessage } from './groq'
 import { assembleTransformMessages } from './prompts'
-import { CHUNKING, JUNK_DETECTION, REQUEST_TIMEOUT_MS } from './config'
+import { CHUNKING, JUNK_DETECTION, REQUEST_TIMEOUT_MS, STT_CLOUD_TIMEOUT_MS } from './config'
 import { localLLMManager } from './localLLM'
+import { whisperManager } from './whisper'
+import { hasApiKey } from './keyStore'
+
+// ─── Cloud→local STT fallback ───
+// Transcription is resilient: if a Groq key is set we try the cloud first (on a
+// short budget); on any failure — or when no key is set at all — we transcribe
+// on-device with whisper. `onFallback` lets the caller surface a one-time notice.
+
+export type STTEngine = 'cloud' | 'local'
+
+export interface TranscribeOutcome {
+  text: string
+  engine: STTEngine
+  cloudError: string | null
+}
+
+/** Human-readable reason for switching to on-device (never mentions "Groq"). */
+function fallbackReasonFor(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err)
+  if (/\(401\)/.test(msg)) return 'API key rejected'
+  if (/\(429\)/.test(msg)) return 'rate limit or no credits'
+  if (/\(5\d\d\)/.test(msg)) return 'online model error'
+  if (/abort/i.test(msg)) return 'online model timed out'
+  return 'online model unavailable'
+}
+
+async function transcribeWithFallback(
+  audioBuffer: Buffer,
+  options: { sttEndpoint?: string; sttLanguage?: string } = {},
+  signal?: AbortSignal,
+  onFallback?: (reason: string) => void,
+): Promise<TranscribeOutcome> {
+  const groqOpts = {
+    endpoint: (options.sttEndpoint === 'translations' ? 'translations' : 'transcriptions') as 'transcriptions' | 'translations',
+    language: options.sttLanguage,
+  }
+
+  let cloudError: string | null = null
+
+  if (hasApiKey()) {
+    // Cloud attempt on a short budget so a hang doesn't stall the fallback.
+    const budget = new AbortController()
+    const timer = setTimeout(() => budget.abort(), STT_CLOUD_TIMEOUT_MS)
+    const onOuter = () => budget.abort()
+    signal?.addEventListener('abort', onOuter, { once: true })
+    try {
+      const text = await groqTranscribe(audioBuffer, groqOpts, budget.signal)
+      return { text, engine: 'cloud', cloudError: null }
+    } catch (err) {
+      // A caller-initiated cancel (not the budget) should propagate, not fall back.
+      if (signal?.aborted) throw err
+      cloudError = err instanceof Error ? err.message : String(err)
+      console.warn('[api] Cloud STT failed, falling back to on-device:', cloudError)
+    } finally {
+      clearTimeout(timer)
+      signal?.removeEventListener('abort', onOuter)
+    }
+  }
+
+  // On-device fallback (also the path when no key is set).
+  if (!whisperManager.isAvailable()) {
+    if (!hasApiKey()) {
+      throw new NoApiKeyError()
+    }
+    throw new Error(`${fallbackReasonFor(cloudError)} — and the on-device model isn't ready yet`)
+  }
+
+  onFallback?.(hasApiKey() ? fallbackReasonFor(cloudError) : 'on-device mode')
+  const text = await whisperManager.transcribe(audioBuffer)
+  return { text, engine: 'local', cloudError }
+}
 
 // ─── Config types (kept for compatibility; now sourced locally) ───
 
@@ -164,17 +235,12 @@ export async function pipelineTranscribe(
     sttEndpoint?: string
     sttLanguage?: string
     inputLanguage?: string
+    onFallback?: (reason: string) => void
   } = {},
   signal?: AbortSignal,
 ): Promise<string> {
-  return groqTranscribe(
-    audioBuffer,
-    {
-      endpoint: options.sttEndpoint === 'translations' ? 'translations' : 'transcriptions',
-      language: options.sttLanguage,
-    },
-    signal,
-  )
+  const outcome = await transcribeWithFallback(audioBuffer, options, signal, options.onFallback)
+  return outcome.text
 }
 
 /** Parallel transcription (hi) + translation (en) of the same audio. */
@@ -205,19 +271,22 @@ export async function pipelineProcess(
     sttEndpoint?: string
     sttLanguage?: string
     inputLanguage?: string
+    onFallback?: (reason: string) => void
   } = {},
   signal?: AbortSignal,
 ): Promise<PipelineResult> {
-  const transcript = await groqTranscribe(
-    audioBuffer,
-    { endpoint: options.sttEndpoint === 'translations' ? 'translations' : 'transcriptions', language: options.sttLanguage },
-    signal,
-  )
+  const dictationOutcome = await transcribeWithFallback(audioBuffer, options, signal, options.onFallback)
+  const transcript = dictationOutcome.text
 
   let instruction = options.instruction ?? null
   if (options.instructionAudio) {
-    instruction = await groqTranscribe(options.instructionAudio, { language: options.sttLanguage }, signal)
+    // Don't re-fire the fallback notice for the second clip in the same session.
+    const instrOutcome = await transcribeWithFallback(options.instructionAudio, { sttLanguage: options.sttLanguage }, signal)
+    instruction = instrOutcome.text
   }
+
+  // If STT fell back to local, the LLM (cloud-only in v1) likely won't reach either.
+  // For instruction-bearing flows we still try; chatWithFallback degrades to raw text.
 
   // Dictation with a junk/silent transcript → no output.
   if (flowType === 'dictation' && isJunkTranscript(transcript)) {

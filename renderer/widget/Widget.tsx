@@ -8,6 +8,7 @@ interface WidgetProps {
   outputPreview?: string
   errorMessage?: string
   showDiscardHint?: boolean
+  engineNotice?: string | null
   onCancel: () => void
   onStop: () => void
   onUndo: () => void
@@ -19,6 +20,7 @@ export default function Widget({
   outputPreview,
   errorMessage,
   showDiscardHint = false,
+  engineNotice = null,
   onStop,
   onUndo
 }: WidgetProps) {
@@ -96,13 +98,15 @@ export default function Widget({
       {state === 'processing' && (
         <div className="unmute-pill">
           <div className="unmute-pill-dot unmute-pill-dot--processing animate-dot-pulse-processing" />
-          <span className="unmute-pill-label">Processing</span>
+          <span className="unmute-pill-label">{engineNotice ? 'On-device' : 'Processing'}</span>
           <div className="unmute-pill-dots unmute-pill-dots--processing">
             <span className="animate-dot-bounce" />
             <span className="animate-dot-bounce" />
             <span className="animate-dot-bounce" />
           </div>
-          {showDiscardHint && (
+          {engineNotice ? (
+            <span className="unmute-pill-helper animate-fade-up-in">offline model</span>
+          ) : showDiscardHint && (
             <span className="unmute-pill-helper animate-fade-up-in">Esc to discard</span>
           )}
         </div>

@@ -357,27 +357,8 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       // Ignore — not critical
     }
 
-    // Dynamic max duration from quota budget
-    let effectiveMaxMs = DEFAULT_MAX_DURATION_MS
-    try {
-      const quota = await window.electronAPI.getQuota()
-      if (quota && typeof quota.max_recording_seconds === 'number') {
-        const budgetMs = quota.max_recording_seconds * 1000
-        if (quota.max_recording_seconds < MIN_BUDGET_SECONDS) {
-          console.log(`[audio] Budget too low (${quota.max_recording_seconds}s) — quota blocked`)
-          window.electronAPI.sendQuotaBlocked()
-          return
-        }
-        effectiveMaxMs = Math.min(budgetMs, DEFAULT_MAX_DURATION_MS)
-        setMaxDurationSeconds(Math.round(effectiveMaxMs / 1000))
-        console.log(`[audio] Dynamic max duration: ${effectiveMaxMs}ms (budget: ${quota.max_recording_seconds}s)`)
-      } else {
-        setMaxDurationSeconds(300)
-      }
-    } catch {
-      setMaxDurationSeconds(300)
-      console.log('[audio] Could not query quota, using default max duration')
-    }
+    // Fixed max recording duration (no quota in local/BYO-key mode)
+    setMaxDurationSeconds(Math.round(DEFAULT_MAX_DURATION_MS / 1000))
 
     // Sarvam has a 30s limit — force chunked mode and cap hard chunk at 28s
     try {
@@ -445,10 +426,10 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       }, minMs)
     }
 
-    // Auto-stop at dynamic max duration
+    // Auto-stop at max duration
     maxTimerRef.current = setTimeout(() => {
       stopRecording()
-    }, effectiveMaxMs)
+    }, DEFAULT_MAX_DURATION_MS)
   }, [flushRecorder, startVADMonitoring])
 
   const stopRecording = useCallback(async () => {
