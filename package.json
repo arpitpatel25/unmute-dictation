@@ -1,0 +1,40 @@
+{
+  "name": "unmute",
+  "version": "1.0.0",
+  "description": "Voice-first text manipulation desktop app",
+  "main": "./dist/electron/main.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "compile:globe": "node scripts/build-globe-listener.js",
+    "compile:whisper": "node scripts/download-whisper.js",
+    "compile:llama": "node scripts/download-llama.js",
+    "compile:key-poster": "node scripts/build-key-poster.js",
+    "compile:native": "npm run compile:globe && npm run compile:key-poster && npm run compile:whisper && npm run compile:llama",
+    "setup:faster-whisper": "node scripts/setup-faster-whisper.js",
+    "predev": "npm run compile:native",
+    "prebuild": "npm run compile:native",
+    "dist": "electron-vite build && electron-builder --mac"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "electron-store": "^11.0.2",
+    "ffmpeg-static": "^5.3.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "undici": "^7.22.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "electron": "^40.6.0",
+    "electron-builder": "^26.8.1",
+    "electron-vite": "^5.0.0",
+    "tailwindcss": "^4.2.0",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,30 @@
+appId: com.unmute.app
+productName: Unmute
+directories:
+  output: release
+  buildResources: resources
+files:
+  - dist/**/*
+  - resources/**/*
+  - "!resources/bin/**"
+extraResources:
+  - from: resources/bin/
+    to: bin/
+    filter:
+      - "**/*"
+      - "!.gitkeep"
+  - from: node_modules/ffmpeg-static/ffmpeg
+    to: ffmpeg
+mac:
+  category: public.app-category.productivity
+  target:
+    - dmg
+    - dir
+  identity: null
+  protocols:
+    - name: Unmute
+      schemes:
+        - unmute
+win:
+  target:
+    - nsis

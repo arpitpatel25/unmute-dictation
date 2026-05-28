@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+
+# Native binaries and libraries
+resources/bin/
+resources/lib/
+
+# Environment
+.env
+.env.local
+
+# Audio files
+*.webm
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Electron / build artifacts
+release/
+*.dmg
+*.exe
+*.AppImage
+
+# Build temp
+.whisper-build/
+
+# Faster-whisper Python venv
+resources/faster-whisper/venv/
+
+# Supabase
+supabase/.temp/
