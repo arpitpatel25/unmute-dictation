@@ -83,6 +83,18 @@ const electronAPI = {
     ipcRenderer.on('auth:callback', (_event, url) => callback(url))
   },
 
+  // Permissions (macOS)
+  getMicPermissionStatus: (): Promise<string> => ipcRenderer.invoke('permissions:mic-status'),
+  requestMicPermission: (): Promise<boolean> => ipcRenderer.invoke('permissions:request-mic'),
+  openMicSettings: () => {
+    ipcRenderer.send('permissions:open-mic-settings')
+  },
+  openAccessibilitySettings: () => {
+    ipcRenderer.send('permissions:open-accessibility-settings')
+  },
+  getAccessibilityStatus: (): Promise<boolean> => ipcRenderer.invoke('permissions:accessibility-status'),
+  requestAccessibility: (): Promise<boolean> => ipcRenderer.invoke('permissions:request-accessibility'),
+
   // Settings
   setLLMProvider: (provider: 'cloud' | 'local-llm') => {
     ipcRenderer.send('settings:llm-provider', provider)

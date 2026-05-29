@@ -6,7 +6,7 @@ process.stderr?.on('error', (err) => {
   if ((err as NodeJS.ErrnoException).code === 'EPIPE') return
 })
 
-import { app, BrowserWindow, ipcMain, globalShortcut, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, globalShortcut, shell, systemPreferences } from 'electron'
 import { readFileSync, writeFileSync } from 'fs'
 import path from 'path'
 import { keyboardManager, KeyboardEvent } from './keyboard'
@@ -717,6 +717,47 @@ function setupIPC(): void {
     if (url.startsWith('http://') || url.startsWith('https://')) {
       shell.openExternal(url)
     }
+  })
+
+  // ─── Permissions (macOS) ───
+  // Returns 'granted' | 'denied' | 'restricted' | 'not-determined' | 'unknown'.
+  ipcMain.handle('permissions:mic-status', () => {
+    if (process.platform !== 'darwin') return 'granted'
+    return systemPreferences.getMediaAccessStatus('microphone')
+  })
+
+  // Triggers the native prompt. Only prompts when status is 'not-determined';
+  // if already denied, macOS resolves false WITHOUT prompting — caller should
+  // then deep-link to the Microphone settings pane.
+  ipcMain.handle('permissions:request-mic', async () => {
+    if (process.platform !== 'darwin') return true
+    try {
+      return await systemPreferences.askForMediaAccess('microphone')
+    } catch {
+      return false
+    }
+  })
+
+  ipcMain.on('permissions:open-mic-settings', () => {
+    shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone')
+  })
+
+  ipcMain.on('permissions:open-accessibility-settings', () => {
+    shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility')
+  })
+
+  // Whether the app is trusted for Accessibility (needed for global key
+  // detection AND pasting at the cursor). Pass prompt=false to just check.
+  ipcMain.handle('permissions:accessibility-status', () => {
+    if (process.platform !== 'darwin') return true
+    return systemPreferences.isTrustedAccessibilityClient(false)
+  })
+
+  // prompt=true surfaces the macOS "open Accessibility settings" system prompt
+  // and adds the app to the list, so the user only has to flip the toggle.
+  ipcMain.handle('permissions:request-accessibility', () => {
+    if (process.platform !== 'darwin') return true
+    return systemPreferences.isTrustedAccessibilityClient(true)
   })
 
 }

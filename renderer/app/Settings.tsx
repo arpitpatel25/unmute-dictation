@@ -325,6 +325,22 @@ export default function Settings({ onDictationKeyChange }: SettingsProps = {}) {
           />
         </SettingRow>
       </div>
+
+      {/* ═══ Help ═══ */}
+      <SectionHeader icon={<BehaviorIcon />} title="Help" />
+      <div className="bg-surface-2 border border-border rounded-2xl overflow-hidden mb-3 shadow-sm">
+        <SettingRow label="Replay onboarding" description="Walk through the welcome and setup steps again">
+          <button
+            onClick={() => {
+              localStorage.removeItem('unmute_onboarding_complete')
+              location.reload()
+            }}
+            className="px-4 py-2 rounded-full border border-border text-[12px] font-semibold text-ink-60 hover:bg-cream-mid hover:border-border-md transition-all duration-200"
+          >
+            Replay
+          </button>
+        </SettingRow>
+      </div>
     </div>
   )
 }

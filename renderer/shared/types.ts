@@ -50,6 +50,13 @@ export interface ElectronAPI {
   sendAuthToken: (token: string) => void
   openExternal: (url: string) => void
   onAuthCallback: (callback: (url: string) => void) => void
+  // Permissions (macOS)
+  getMicPermissionStatus: () => Promise<string>
+  requestMicPermission: () => Promise<boolean>
+  openMicSettings: () => void
+  openAccessibilitySettings: () => void
+  getAccessibilityStatus: () => Promise<boolean>
+  requestAccessibility: () => Promise<boolean>
   setLLMProvider: (provider: 'cloud' | 'local-llm') => void
   getLLMProvider: () => Promise<string>
   setSTTProvider: (provider: 'cloud' | 'local' | 'faster-whisper' | 'cartesia' | 'sarvam' | 'dual-whisper') => void

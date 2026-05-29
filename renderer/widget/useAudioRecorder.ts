@@ -414,6 +414,11 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     chunkStartTimeRef.current = Date.now()
     setIsRecording(true)
 
+    // Always run the RMS monitor for the whole recording so heardSpeech is
+    // tracked even for short, non-chunked dictations. Chunk-SPLITTING stays
+    // gated behind vadActivatedRef, so this never splits short clips.
+    startVADMonitoring()
+
     // If chunked mode, schedule VAD activation after chunkMinMs
     if (chunkedModeEnabledRef.current) {
       const minMs = chunkMinMsRef.current
