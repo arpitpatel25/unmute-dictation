@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import type { UsageSummary } from '../shared/types'
 
 interface AudioDevice {
   deviceId: string
@@ -27,6 +28,11 @@ export default function Settings({ onDictationKeyChange }: SettingsProps = {}) {
   const [keyBusy, setKeyBusy] = useState(false)
   const [keyMsg, setKeyMsg] = useState<{ text: string; type: 'ok' | 'err' } | null>(null)
 
+  // Groq usage (local estimated cost)
+  const [usage, setUsage] = useState<UsageSummary | null>(null)
+  const [usageWindow, setUsageWindow] = useState<'today' | 'month' | 'allTime'>('today')
+  const [usageResetting, setUsageResetting] = useState(false)
+
   useEffect(() => {
     loadAudioDevices()
     // Load persisted settings
@@ -48,7 +54,21 @@ export default function Settings({ onDictationKeyChange }: SettingsProps = {}) {
     window.electronAPI.getGroqKeyStatus().then((s) => {
       setGroqKeyMasked(s.hasKey ? s.masked : null)
     })
+    window.electronAPI.getUsage().then(setUsage).catch(() => {})
   }, [])
+
+  async function handleResetUsage() {
+    if (usageResetting) return
+    setUsageResetting(true)
+    try {
+      const fresh = await window.electronAPI.resetUsage()
+      setUsage(fresh)
+    } catch {
+      /* ignore — best-effort */
+    } finally {
+      setUsageResetting(false)
+    }
+  }
 
   async function handleSaveKey() {
     const key = groqKeyInput.trim()
@@ -188,6 +208,60 @@ export default function Settings({ onDictationKeyChange }: SettingsProps = {}) {
                 {keyMsg.text}
               </span>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ Usage ═══ */}
+      <SectionHeader icon={<UsageIcon />} title="Usage" />
+      <div className="bg-surface-2 border border-border rounded-2xl overflow-hidden mb-3 shadow-sm">
+        <div className="px-5 py-4">
+          {/* Window selector */}
+          <div className="flex justify-center mb-4">
+            <SegmentedControl
+              options={[
+                { value: 'today', label: 'Today' },
+                { value: 'month', label: 'This month' },
+                { value: 'allTime', label: 'All time' },
+              ]}
+              value={usageWindow}
+              onChange={(v) => setUsageWindow(v as 'today' | 'month' | 'allTime')}
+            />
+          </div>
+
+          {/* Selected-window estimated cost */}
+          <div className="text-center mb-4">
+            <p className="text-[34px] font-bold text-ink tabular-nums tracking-tight leading-none">
+              {fmtUsd(usage?.[usageWindow].cost)}
+            </p>
+            <p className="text-[10px] font-medium text-ink-35 uppercase tracking-[0.1em] mt-1.5">
+              Estimated spend
+            </p>
+          </div>
+
+          {/* Breakdown */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <UsageDetail
+              label="Total tokens"
+              value={fmtCount(usage ? usage[usageWindow].inputTokens + usage[usageWindow].outputTokens : undefined)}
+            />
+            <UsageDetail label="Duration" value={fmtDuration(usage?.[usageWindow].sttSeconds)} />
+            <UsageDetail label="Input tokens" value={fmtCount(usage?.[usageWindow].inputTokens)} />
+            <UsageDetail label="Output tokens" value={fmtCount(usage?.[usageWindow].outputTokens)} />
+          </div>
+
+          <div className="flex items-center justify-between mt-4">
+            <p className="text-[11px] text-ink-35 leading-snug pr-3">
+              Estimated from Groq pricing — actual charges may differ. Local
+              transcription and other providers aren’t counted.
+            </p>
+            <button
+              onClick={handleResetUsage}
+              disabled={usageResetting}
+              className="text-[11px] font-medium text-ink-60 hover:text-red-500 transition-colors px-2 py-1 whitespace-nowrap disabled:opacity-40"
+            >
+              Reset
+            </button>
           </div>
         </div>
       </div>
@@ -356,6 +430,41 @@ function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }
   )
 }
 
+/** Format an estimated USD amount; tiny sub-cent totals show as "<$0.01". */
+function fmtUsd(n: number | undefined): string {
+  if (n === undefined) return '—'
+  if (n <= 0) return '$0.00'
+  if (n < 0.01) return '<$0.01'
+  return '$' + n.toFixed(2)
+}
+
+/** Compact count: 1234 → "1.2K", 1_200_000 → "1.2M". Undefined → "—". */
+function fmtCount(n: number | undefined): string {
+  if (n === undefined) return '—'
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M'
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K'
+  return String(n)
+}
+
+/** Audio seconds → "Xs" / "X.X min" / "Xh Ym". Undefined → "—". */
+function fmtDuration(seconds: number | undefined): string {
+  if (seconds === undefined) return '—'
+  if (seconds < 60) return Math.round(seconds) + 's'
+  if (seconds < 3600) return (seconds / 60).toFixed(1).replace(/\.0$/, '') + ' min'
+  const h = Math.floor(seconds / 3600)
+  const m = Math.round((seconds % 3600) / 60)
+  return `${h}h ${m}m`
+}
+
+function UsageDetail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-cream-mid border border-border rounded-[12px] px-3.5 py-2.5 flex items-center justify-between">
+      <span className="text-[11px] font-medium text-ink-60">{label}</span>
+      <span className="text-[13px] font-bold text-ink tabular-nums tracking-tight">{value}</span>
+    </div>
+  )
+}
+
 function SettingRow({ label, description, children }: { label: string; description: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between px-5 py-4 border-b border-border last:border-b-0">
@@ -490,6 +599,14 @@ function KeyIcon() {
     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="5.5" cy="5.5" r="3" />
       <path d="M7.6 7.6l5 5M11 11l1.5-1.5M13 13l1-1" />
+    </svg>
+  )
+}
+
+function UsageIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 1v14M11 4H6.5a2 2 0 0 0 0 4h3a2 2 0 0 1 0 4H5" />
     </svg>
   )
 }

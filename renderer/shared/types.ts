@@ -23,6 +23,22 @@ export interface ServerConfig {
   }
 }
 
+/** Estimated cost plus the raw units behind it, for one time window. */
+export interface UsageWindow {
+  /** Estimated USD spent in this window. */
+  cost: number
+  inputTokens: number
+  outputTokens: number
+  /** Seconds of audio transcribed. */
+  sttSeconds: number
+}
+
+export interface UsageSummary {
+  today: UsageWindow
+  month: UsageWindow
+  allTime: UsageWindow
+}
+
 export interface ElectronAPI {
   onRecordingStart: (callback: (mode: 'dictation' | 'instruction', sessionId?: string) => void) => void
   onRecordingStop: (callback: () => void) => void
@@ -43,6 +59,8 @@ export interface ElectronAPI {
   onEngineNotice: (callback: (reason: string) => void) => void
   sendAudioDiscarded: (mode: 'dictation' | 'instruction', sessionId?: string) => void
   sendQuotaBlocked: () => void
+  getUsage: () => Promise<UsageSummary>
+  resetUsage: () => Promise<UsageSummary>
   getGroqKeyStatus: () => Promise<{ hasKey: boolean; masked: string | null }>
   setGroqKey: (key: string) => Promise<{ success: boolean; masked?: string | null; error?: string }>
   testGroqKey: (key: string) => Promise<{ ok: boolean; error?: string }>
