@@ -72,7 +72,8 @@ export async function groqTranscribe(
   form.append('model', GROQ.sttModel)
   form.append('response_format', GROQ.sttResponseFormat)
   form.append('temperature', '0')
-  form.append('prompt', GROQ.sttPrompt)
+  // No `prompt`: Whisper treats it as preceding text and parrots it back on
+  // silence/noise (e.g. "What is the spoken audio?"). Omitting it avoids that.
   const lang = options.language ?? GROQ.sttDefaultLanguage
   if (lang && lang !== 'auto') form.append('language', lang)
 

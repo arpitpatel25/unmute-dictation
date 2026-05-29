@@ -9,10 +9,9 @@ export const GROQ = {
   sttTranslationsUrl: 'https://api.groq.com/openai/v1/audio/translations',
   sttModel: 'whisper-large-v3-turbo',
   sttResponseFormat: 'verbose_json',
-  // Default Whisper params. `prompt` nudges accurate transcription; `language`
-  // can be overridden per-request (or omitted for auto-detect).
+  // `language` can be overridden per-request (or omitted for auto-detect).
+  // No STT `prompt`: Whisper parrots it back on silence/noise.
   sttDefaultLanguage: 'en',
-  sttPrompt: 'Transcribe the spoken audio accurately.',
 
   chatUrl: 'https://api.groq.com/openai/v1/chat/completions',
   // LLM used for on-demand transform/instruction flows.
