@@ -139,6 +139,13 @@ class WhisperManager {
     console.log('[whisper]   Model:', modelPath)
     console.log('[whisper]   Port:', SERVER_PORT)
 
+    // `--convert` makes whisper-server shell out to ffmpeg, so ffmpeg's dir
+    // must be on PATH (the bundled binary lives in app.asar.unpacked, not PATH).
+    const { getFFmpegPath } = await import('./ffmpeg')
+    const ffmpegPath = getFFmpegPath()
+    const ffmpegDir = ffmpegPath ? path.dirname(ffmpegPath) : ''
+    const serverPath = ffmpegDir ? `${ffmpegDir}:${process.env.PATH || ''}` : (process.env.PATH || '')
+
     const proc = spawn(serverBinary, [
       '-m', modelPath,
       '--host', SERVER_HOST,
@@ -155,6 +162,7 @@ class WhisperManager {
       env: {
         ...process.env,
         DYLD_LIBRARY_PATH: libDir,
+        PATH: serverPath,
       }
     })
 
