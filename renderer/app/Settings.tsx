@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import type { UsageSummary } from '../shared/types'
 
 interface AudioDevice {
   deviceId: string
@@ -28,7 +29,7 @@ export default function Settings({ onDictationKeyChange }: SettingsProps = {}) {
   const [keyMsg, setKeyMsg] = useState<{ text: string; type: 'ok' | 'err' } | null>(null)
 
   // Groq usage (local estimated cost)
-  const [usage, setUsage] = useState<{ today: number; month: number; allTime: number } | null>(null)
+  const [usage, setUsage] = useState<UsageSummary | null>(null)
   const [usageResetting, setUsageResetting] = useState(false)
 
   useEffect(() => {
@@ -219,6 +220,11 @@ export default function Settings({ onDictationKeyChange }: SettingsProps = {}) {
             <UsageStat label="This month" value={fmtUsd(usage?.month)} />
             <UsageStat label="All time" value={fmtUsd(usage?.allTime)} />
           </div>
+          {usage && (
+            <p className="text-[11px] text-ink-60 mt-2.5 tabular-nums">
+              All-time: {fmtCount(usage.totals.inputTokens)} in · {fmtCount(usage.totals.outputTokens)} out tokens · {fmtMinutes(usage.totals.sttSeconds)} transcribed
+            </p>
+          )}
           <div className="flex items-center justify-between mt-3">
             <p className="text-[11px] text-ink-35 leading-snug pr-3">
               Estimated from Groq pricing — actual charges may differ. Local
@@ -405,6 +411,22 @@ function fmtUsd(n: number | undefined): string {
   if (n <= 0) return '$0.00'
   if (n < 0.01) return '<$0.01'
   return '$' + n.toFixed(2)
+}
+
+/** Compact count: 1234 → "1.2K", 1_200_000 → "1.2M". */
+function fmtCount(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M'
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K'
+  return String(n)
+}
+
+/** Audio seconds → "Xs" / "X.X min" / "Xh Ym". */
+function fmtMinutes(seconds: number): string {
+  if (seconds < 60) return Math.round(seconds) + 's'
+  if (seconds < 3600) return (seconds / 60).toFixed(1).replace(/\.0$/, '') + ' min'
+  const h = Math.floor(seconds / 3600)
+  const m = Math.round((seconds % 3600) / 60)
+  return `${h}h ${m}m`
 }
 
 function UsageStat({ label, value }: { label: string; value: string }) {

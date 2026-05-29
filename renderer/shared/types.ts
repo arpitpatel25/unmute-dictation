@@ -30,6 +30,12 @@ export interface UsageSummary {
   month: number
   /** Estimated USD spent all-time. */
   allTime: number
+  /** All-time raw usage units behind the estimate. */
+  totals: {
+    inputTokens: number
+    outputTokens: number
+    sttSeconds: number
+  }
 }
 
 export interface ElectronAPI {

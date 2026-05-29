@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import type { UsageSummary } from './usageTracker'
 
 const electronAPI = {
   // Recording control
@@ -65,8 +66,8 @@ const electronAPI = {
   },
 
   // Groq usage (local estimated cost)
-  getUsage: (): Promise<{ today: number; month: number; allTime: number }> => ipcRenderer.invoke('usage:get'),
-  resetUsage: (): Promise<{ today: number; month: number; allTime: number }> => ipcRenderer.invoke('usage:reset'),
+  getUsage: (): Promise<UsageSummary> => ipcRenderer.invoke('usage:get'),
+  resetUsage: (): Promise<UsageSummary> => ipcRenderer.invoke('usage:reset'),
 
   // Groq API key (BYO-key)
   getGroqKeyStatus: (): Promise<{ hasKey: boolean; masked: string | null }> => ipcRenderer.invoke('groq-key:status'),

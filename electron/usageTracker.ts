@@ -56,6 +56,12 @@ export interface UsageSummary {
   month: number
   /** Estimated USD spent all-time. */
   allTime: number
+  /** All-time raw usage units behind the estimate. */
+  totals: {
+    inputTokens: number
+    outputTokens: number
+    sttSeconds: number
+  }
 }
 
 /** Combined estimated dollar totals across today / this month / all-time. */
@@ -63,6 +69,9 @@ export function getUsageSummary(): UsageSummary {
   let today = 0
   let month = 0
   let allTime = 0
+  let inputTokens = 0
+  let outputTokens = 0
+  let sttSeconds = 0
   try {
     const todayStr = localDateStr()
     const monthStr = todayStr.slice(0, 7) // YYYY-MM
@@ -71,11 +80,14 @@ export function getUsageSummary(): UsageSummary {
       allTime += cost
       if (row.date.startsWith(monthStr)) month += cost
       if (row.date === todayStr) today += cost
+      inputTokens += row.input_tokens
+      outputTokens += row.output_tokens
+      sttSeconds += row.stt_seconds
     }
   } catch (err) {
     console.warn('[usage] failed to summarize usage:', err instanceof Error ? err.message : err)
   }
-  return { today, month, allTime }
+  return { today, month, allTime, totals: { inputTokens, outputTokens, sttSeconds } }
 }
 
 /** Wipe all recorded usage (the Settings "Reset" button). */
