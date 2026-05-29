@@ -64,6 +64,10 @@ const electronAPI = {
     ipcRenderer.send('quota:blocked')
   },
 
+  // Groq usage (local estimated cost)
+  getUsage: (): Promise<{ today: number; month: number; allTime: number }> => ipcRenderer.invoke('usage:get'),
+  resetUsage: (): Promise<{ today: number; month: number; allTime: number }> => ipcRenderer.invoke('usage:reset'),
+
   // Groq API key (BYO-key)
   getGroqKeyStatus: (): Promise<{ hasKey: boolean; masked: string | null }> => ipcRenderer.invoke('groq-key:status'),
   setGroqKey: (key: string): Promise<{ success: boolean; masked?: string | null; error?: string }> => ipcRenderer.invoke('groq-key:set', key),

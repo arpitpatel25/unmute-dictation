@@ -40,8 +40,67 @@ export function initDB(): void {
     CREATE INDEX IF NOT EXISTS idx_sessions_created ON sessions(created_at DESC);
   `)
 
+  // Cumulative Groq usage, one row per local day + model. Deliberately NOT
+  // subject to the sessions cleanup below — this is a lifetime running total.
+  // Raw units are stored (audio seconds, token counts); dollars are computed at
+  // read time from the price table, so changing prices recomputes history.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS usage_daily (
+      date TEXT NOT NULL,
+      model TEXT NOT NULL,
+      stt_seconds REAL NOT NULL DEFAULT 0,
+      input_tokens INTEGER NOT NULL DEFAULT 0,
+      output_tokens INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (date, model)
+    );
+  `)
+
   // Run cleanup on init
   cleanupSessions()
+}
+
+export interface UsageRow {
+  date: string
+  model: string
+  stt_seconds: number
+  input_tokens: number
+  output_tokens: number
+}
+
+/**
+ * Add usage to a (date, model) bucket, creating it if needed. Amounts are
+ * additive — pass only what this single request consumed.
+ */
+export function addUsage(date: string, model: string, delta: {
+  sttSeconds?: number
+  inputTokens?: number
+  outputTokens?: number
+}): void {
+  const stmt = db.prepare(`
+    INSERT INTO usage_daily (date, model, stt_seconds, input_tokens, output_tokens)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(date, model) DO UPDATE SET
+      stt_seconds = stt_seconds + excluded.stt_seconds,
+      input_tokens = input_tokens + excluded.input_tokens,
+      output_tokens = output_tokens + excluded.output_tokens
+  `)
+  stmt.run(
+    date,
+    model,
+    delta.sttSeconds || 0,
+    delta.inputTokens || 0,
+    delta.outputTokens || 0,
+  )
+}
+
+/** All usage rows. Small (one row per day per model), so reading all is cheap. */
+export function getUsageRows(): UsageRow[] {
+  return db.prepare('SELECT * FROM usage_daily').all() as UsageRow[]
+}
+
+export function clearUsage(): void {
+  db.prepare('DELETE FROM usage_daily').run()
+  console.log('[db] Usage stats cleared')
 }
 
 export function saveSession(session: {

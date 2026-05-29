@@ -19,6 +19,31 @@ export const GROQ = {
   chatMaxTokens: 8192,
 } as const
 
+// ─── Groq pricing (for the local usage/cost estimate) ───
+// Groq's API does not report dollars per request, so unmute estimates spend
+// locally: it multiplies the exact usage each response reports (audio seconds
+// for Whisper, token counts for the LLM) by the rates below.
+//
+// These rates are HARDCODED and will silently drift if Groq changes pricing.
+// Verify against <https://groq.com/pricing> — last checked 2026-05.
+// A model with no entry here contributes $0 to the estimate.
+export interface ModelPricing {
+  /** USD per hour of transcribed audio (Whisper models). */
+  perAudioHour?: number
+  /** USD per 1M input/prompt tokens (chat models). */
+  perMInputTokens?: number
+  /** USD per 1M output/completion tokens (chat models). */
+  perMOutputTokens?: number
+}
+
+export const GROQ_PRICING: Record<string, ModelPricing> = {
+  'whisper-large-v3-turbo': { perAudioHour: 0.04 },
+  'meta-llama/llama-4-scout-17b-16e-instruct': {
+    perMInputTokens: 0.11,
+    perMOutputTokens: 0.34,
+  },
+}
+
 // ─── Chunking (long-recording VAD splitting) ───
 // Read by the renderer at recording start.
 export const CHUNKING = {

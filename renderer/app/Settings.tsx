@@ -27,6 +27,10 @@ export default function Settings({ onDictationKeyChange }: SettingsProps = {}) {
   const [keyBusy, setKeyBusy] = useState(false)
   const [keyMsg, setKeyMsg] = useState<{ text: string; type: 'ok' | 'err' } | null>(null)
 
+  // Groq usage (local estimated cost)
+  const [usage, setUsage] = useState<{ today: number; month: number; allTime: number } | null>(null)
+  const [usageResetting, setUsageResetting] = useState(false)
+
   useEffect(() => {
     loadAudioDevices()
     // Load persisted settings
@@ -48,7 +52,21 @@ export default function Settings({ onDictationKeyChange }: SettingsProps = {}) {
     window.electronAPI.getGroqKeyStatus().then((s) => {
       setGroqKeyMasked(s.hasKey ? s.masked : null)
     })
+    window.electronAPI.getUsage().then(setUsage).catch(() => {})
   }, [])
+
+  async function handleResetUsage() {
+    if (usageResetting) return
+    setUsageResetting(true)
+    try {
+      const fresh = await window.electronAPI.resetUsage()
+      setUsage(fresh)
+    } catch {
+      /* ignore — best-effort */
+    } finally {
+      setUsageResetting(false)
+    }
+  }
 
   async function handleSaveKey() {
     const key = groqKeyInput.trim()
@@ -188,6 +206,31 @@ export default function Settings({ onDictationKeyChange }: SettingsProps = {}) {
                 {keyMsg.text}
               </span>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ Usage ═══ */}
+      <SectionHeader icon={<UsageIcon />} title="Usage" />
+      <div className="bg-surface-2 border border-border rounded-2xl overflow-hidden mb-3 shadow-sm">
+        <div className="px-5 py-4">
+          <div className="flex gap-2.5">
+            <UsageStat label="Today" value={fmtUsd(usage?.today)} />
+            <UsageStat label="This month" value={fmtUsd(usage?.month)} />
+            <UsageStat label="All time" value={fmtUsd(usage?.allTime)} />
+          </div>
+          <div className="flex items-center justify-between mt-3">
+            <p className="text-[11px] text-ink-35 leading-snug pr-3">
+              Estimated from Groq pricing — actual charges may differ. Local
+              transcription and other providers aren’t counted.
+            </p>
+            <button
+              onClick={handleResetUsage}
+              disabled={usageResetting}
+              className="text-[11px] font-medium text-ink-60 hover:text-red-500 transition-colors px-2 py-1 whitespace-nowrap disabled:opacity-40"
+            >
+              Reset
+            </button>
           </div>
         </div>
       </div>
@@ -356,6 +399,23 @@ function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }
   )
 }
 
+/** Format an estimated USD amount; tiny sub-cent totals show as "<$0.01". */
+function fmtUsd(n: number | undefined): string {
+  if (n === undefined) return '—'
+  if (n <= 0) return '$0.00'
+  if (n < 0.01) return '<$0.01'
+  return '$' + n.toFixed(2)
+}
+
+function UsageStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex-1 bg-cream-mid border border-border rounded-[12px] px-3.5 py-3 text-center">
+      <p className="text-[18px] font-bold text-ink tabular-nums tracking-tight">{value}</p>
+      <p className="text-[10px] font-medium text-ink-35 uppercase tracking-[0.08em] mt-0.5">{label}</p>
+    </div>
+  )
+}
+
 function SettingRow({ label, description, children }: { label: string; description: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between px-5 py-4 border-b border-border last:border-b-0">
@@ -490,6 +550,14 @@ function KeyIcon() {
     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="5.5" cy="5.5" r="3" />
       <path d="M7.6 7.6l5 5M11 11l1.5-1.5M13 13l1-1" />
+    </svg>
+  )
+}
+
+function UsageIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 1v14M11 4H6.5a2 2 0 0 0 0 4h3a2 2 0 0 1 0 4H5" />
     </svg>
   )
 }

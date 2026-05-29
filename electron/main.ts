@@ -15,6 +15,7 @@ import { whisperManager } from './whisper'
 import { fasterWhisperManager } from './fasterWhisper'
 import { localLLMManager } from './localLLM'
 import { initDB, saveSession, getSessions, getSession, updateSessionResult, clearAllSessions, closeDB } from './db'
+import { getUsageSummary, resetUsage } from './usageTracker'
 import { getAudioFilePath, loadAudioFile, clearAllAudioFiles } from './audio'
 import { pipelineTranscribe, fetchServerConfig, isConfigStale, getCachedConfig, type QuotaInfo } from './api'
 import { createTray } from './tray'
@@ -710,6 +711,16 @@ function setupIPC(): void {
 
   ipcMain.handle('session:list', async () => {
     return getSessions()
+  })
+
+  // ─── Groq usage (local estimated cost) ───
+  ipcMain.handle('usage:get', () => {
+    return getUsageSummary()
+  })
+
+  ipcMain.handle('usage:reset', () => {
+    resetUsage()
+    return getUsageSummary()
   })
 
   // ─── Auth / External Links ───

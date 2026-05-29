@@ -6,6 +6,7 @@
 import { Agent as UndiciAgent, fetch as undiciFetch, FormData as UndiciFormData } from 'undici'
 import { GROQ, REQUEST_TIMEOUT_MS } from './config'
 import { getApiKey } from './keyStore'
+import { recordSttUsage, recordLlmUsage } from './usageTracker'
 
 const agent = new UndiciAgent({
   keepAliveTimeout: 120_000,
@@ -91,7 +92,10 @@ export async function groqTranscribe(
     if (!res.ok) {
       throw new Error(`Groq transcription failed (${res.status}): ${body.substring(0, 200)}`)
     }
-    const result = JSON.parse(body) as { text?: string }
+    const result = JSON.parse(body) as { text?: string; duration?: number }
+    // `verbose_json` reports the billed audio duration (seconds) — feed the
+    // local usage estimate. Best-effort; never blocks the transcript.
+    if (typeof result.duration === 'number') recordSttUsage(GROQ.sttModel, result.duration)
     console.log(`[groq:stt] ${Date.now() - t0}ms | ${(result.text || '').length} chars`)
     return result.text || ''
   } finally {
@@ -127,8 +131,15 @@ export async function groqChat(
     if (!res.ok) {
       throw new Error(`Groq chat failed (${res.status}): ${text.substring(0, 200)}`)
     }
-    const result = JSON.parse(text) as { choices?: Array<{ message?: { content?: string } }> }
+    const result = JSON.parse(text) as {
+      choices?: Array<{ message?: { content?: string } }>
+      usage?: { prompt_tokens?: number; completion_tokens?: number }
+    }
     const content = result.choices?.[0]?.message?.content || ''
+    // Token counts feed the local usage estimate. Best-effort.
+    if (result.usage) {
+      recordLlmUsage(GROQ.chatModel, result.usage.prompt_tokens || 0, result.usage.completion_tokens || 0)
+    }
     console.log(`[groq:chat] ${Date.now() - t0}ms | ${content.length} chars`)
     return content
   } finally {
