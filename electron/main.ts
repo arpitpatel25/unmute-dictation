@@ -23,6 +23,7 @@ import { features, updateFeaturesFromConfig } from './featureFlags'
 import { initErrorLogger, broadcastError } from './errorLogger'
 import { setApiKey, clearApiKey, hasApiKey, getMaskedKey } from './keyStore'
 import { validateApiKey } from './groq'
+import { setupAutoUpdater } from './autoUpdater'
 import {
   createMainWindow,
   createWidgetWindow,
@@ -801,6 +802,7 @@ app.whenReady().then(() => {
 
   setupSessionPersistence()
   setupIPC()
+  setupAutoUpdater()
 
   // Setup keyboard AFTER IPC so that a key listener crash doesn't block IPC registration
   try {
