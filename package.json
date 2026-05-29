@@ -15,7 +15,57 @@
     "setup:faster-whisper": "node scripts/setup-faster-whisper.js",
     "predev": "npm run compile:native",
     "prebuild": "npm run compile:native",
+    "postinstall": "electron-builder install-app-deps",
+    "predist": "npm run compile:native",
     "dist": "electron-vite build && electron-builder --mac"
+  },
+  "build": {
+    "appId": "com.arpitpatel.unmute",
+    "productName": "unmute",
+    "copyright": "Copyright © 2026 Arpit Patel",
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      { "from": "resources/bin", "to": "bin" },
+      { "from": "resources/lib", "to": "lib" },
+      { "from": "resources/faster-whisper", "to": "faster-whisper" },
+      { "from": "resources/icon.icns", "to": "icon.icns" }
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "**/*.node",
+      "node_modules/ffmpeg-static/**"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "resources/icon.icns",
+      "target": [
+        { "target": "dmg", "arch": ["arm64"] }
+      ],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "notarize": true,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "unmute uses your microphone to transcribe what you say into text.",
+        "NSAppleEventsUsageDescription": "unmute uses System Events to paste transcribed text at your cursor."
+      }
+    },
+    "dmg": {
+      "title": "${productName} ${version}",
+      "contents": [
+        { "x": 140, "y": 220 },
+        { "x": 400, "y": 220, "type": "link", "path": "/Applications" }
+      ]
+    }
   },
   "dependencies": {
     "better-sqlite3": "^12.6.2",
