@@ -22,8 +22,8 @@ const electronAPI = {
   onOutputReady: (callback: (text: string, sessionId: string) => void) => {
     ipcRenderer.on('output:ready', (_event, text, sessionId) => callback(text, sessionId))
   },
-  onOutputFallback: (callback: (text: string, sessionId: string) => void) => {
-    ipcRenderer.on('output:fallback', (_event, text, sessionId) => callback(text, sessionId))
+  onOutputFallback: (callback: (text: string, sessionId: string, message?: string) => void) => {
+    ipcRenderer.on('output:fallback', (_event, text, sessionId, message) => callback(text, sessionId, message))
   },
   onOutputError: (callback: (error: string, sessionId: string) => void) => {
     ipcRenderer.on('output:error', (_event, error, sessionId) => callback(error, sessionId))

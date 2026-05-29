@@ -48,6 +48,7 @@ function playClickSound(type: 'start' | 'stop') {
 export default function WidgetApp() {
   const [state, setState] = useState<WidgetState>('hidden')
   const [outputPreview, setOutputPreview] = useState('')
+  const [fallbackMessage, setFallbackMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [showDiscardHint, setShowDiscardHint] = useState(false)
   const [engineNotice, setEngineNotice] = useState<string | null>(null)
@@ -118,10 +119,11 @@ export default function WidgetApp() {
       scheduleAutoHide(1200)
     })
 
-    api.onOutputFallback((text) => {
+    api.onOutputFallback((text, _sessionId, message) => {
       playClickSound('stop')
       const preview = text.length > 50 ? text.slice(0, 50) + '...' : text
       setOutputPreview(preview)
+      setFallbackMessage(message || 'Formatting unavailable — pasted raw')
       setState('output-fallback')
       setShowDiscardHint(false)
       scheduleAutoHide(4000)
@@ -194,6 +196,7 @@ export default function WidgetApp() {
         analyserNode={analyserNode}
         maxDurationSeconds={maxDurationSeconds}
         outputPreview={outputPreview}
+        fallbackMessage={fallbackMessage}
         errorMessage={errorMessage}
         showDiscardHint={showDiscardHint}
         engineNotice={engineNotice}

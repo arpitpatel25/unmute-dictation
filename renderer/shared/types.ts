@@ -30,7 +30,7 @@ export interface ElectronAPI {
   sendAudioChunk: (buffer: ArrayBuffer, chunkIndex: number, mode: 'dictation' | 'instruction', sessionId?: string) => void
   sendAudioFinalChunk: (buffer: ArrayBuffer, chunkIndex: number, totalChunks: number, duration: number, mode: 'dictation' | 'instruction', sessionId?: string) => void
   onOutputReady: (callback: (text: string, sessionId: string) => void) => void
-  onOutputFallback: (callback: (text: string, sessionId: string) => void) => void
+  onOutputFallback: (callback: (text: string, sessionId: string, message?: string) => void) => void
   onOutputError: (callback: (error: string, sessionId: string) => void) => void
   getSessions: () => Promise<Session[]>
   retrySession: (sessionId: string) => void

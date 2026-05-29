@@ -6,6 +6,7 @@ interface WidgetProps {
   analyserNode: AnalyserNode | null
   maxDurationSeconds?: number
   outputPreview?: string
+  fallbackMessage?: string
   errorMessage?: string
   showDiscardHint?: boolean
   engineNotice?: string | null
@@ -18,6 +19,7 @@ export default function Widget({
   state,
   maxDurationSeconds = 300,
   outputPreview,
+  fallbackMessage,
   errorMessage,
   showDiscardHint = false,
   engineNotice = null,
@@ -135,7 +137,7 @@ export default function Widget({
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
           </div>
-          <span className="unmute-pill-fallback-text">Raw — formatting failed</span>
+          <span className="unmute-pill-fallback-text">{fallbackMessage || 'Formatting unavailable — pasted raw'}</span>
           <span className="unmute-pill-output-text">{outputPreview}</span>
         </div>
       )}

@@ -221,8 +221,25 @@ async function chatWithFallback(
   } catch (err) {
     if ((err as Error)?.name === 'AbortError') throw err
     console.warn('[api] chat failed, using raw fallback:', err instanceof Error ? err.message : err)
-    return { output: fallback, usedFallback: true, fallbackReason: 'llm_error' }
+    return { output: fallback, usedFallback: true, fallbackReason: classifyChatFailure(err) }
   }
+}
+
+/**
+ * Why a formatting (chat) call fell back to raw text. Distinguishes the cases
+ * the user can act on — no key, no connection — from a generic model error,
+ * so the HUD can tell them formatting needs a Groq key / internet.
+ */
+function classifyChatFailure(err: unknown): 'no_key' | 'offline' | 'llm_error' {
+  if (err instanceof NoApiKeyError) return 'no_key'
+  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase()
+  const code = ((err as { cause?: { code?: string } })?.cause?.code || '').toLowerCase()
+  if (
+    msg.includes('fetch failed') || msg.includes('network') || msg.includes('getaddrinfo') ||
+    code.includes('enotfound') || code.includes('econnrefused') || code.includes('und_err') ||
+    code.includes('eai_again') || code.includes('etimedout')
+  ) return 'offline'
+  return 'llm_error'
 }
 
 // ─── Transcription ───

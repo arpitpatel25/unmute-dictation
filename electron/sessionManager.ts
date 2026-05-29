@@ -158,6 +158,17 @@ class SessionManager {
     sendToWidget('session:engine-notice', reason)
   }
 
+  /**
+   * User-facing reason shown when an instruction/transform fell back to raw
+   * text. Formatting runs on Groq, so it's unavailable without a key or while
+   * offline — make that explicit instead of a vague "formatting failed".
+   */
+  private formattingNotice(): string {
+    return hasApiKey()
+      ? 'Formatting needs internet — pasted raw'
+      : 'Formatting needs a Groq key — pasted raw'
+  }
+
   getAuthToken(): string | null {
     return this.authToken
   }
@@ -868,7 +879,7 @@ class SessionManager {
 
           // Show widget feedback
           if (session.errorMessage === 'formatting-fallback') {
-            sendToWidget('output:fallback', output, session.sessionId)
+            sendToWidget('output:fallback', output, session.sessionId, this.formattingNotice())
             this.scheduleAutoHide(4000)
           } else if (output) {
             sendToWidget('output:ready', output, session.sessionId)
@@ -1239,7 +1250,7 @@ class SessionManager {
         }
 
         if (session.errorMessage === 'formatting-fallback') {
-          sendToWidget('output:fallback', output, session.sessionId)
+          sendToWidget('output:fallback', output, session.sessionId, this.formattingNotice())
         } else {
           sendToWidget('output:ready', output, session.sessionId)
         }
