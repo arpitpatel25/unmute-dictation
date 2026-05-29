@@ -380,9 +380,9 @@ function setupIPC(): void {
     sessionManager.undoCancel()
   })
 
-  ipcMain.on('audio:discarded', (_event, mode: string) => {
+  ipcMain.on('audio:discarded', (_event, mode: string, sessionId?: string) => {
     console.log('[main] Audio discarded (too short), mode:', mode)
-    sessionManager.discardSession()
+    sessionManager.discardSession(sessionId)
   })
 
   ipcMain.on('quota:blocked', () => {
@@ -390,19 +390,19 @@ function setupIPC(): void {
     sessionManager.quotaBlocked()
   })
 
-  ipcMain.on('audio:ready', (_event, buffer: ArrayBuffer, duration: number, mode: 'dictation' | 'instruction') => {
+  ipcMain.on('audio:ready', (_event, buffer: ArrayBuffer, duration: number, mode: 'dictation' | 'instruction', sessionId?: string) => {
     console.log('[main] Audio received, mode:', mode, 'duration:', duration, 'bytes:', buffer.byteLength)
-    sessionManager.receiveAudio(Buffer.from(buffer), duration, mode)
+    sessionManager.receiveAudio(Buffer.from(buffer), duration, mode, sessionId)
   })
 
-  ipcMain.on('audio:chunk', (_event, buffer: ArrayBuffer, chunkIndex: number, mode: 'dictation' | 'instruction') => {
+  ipcMain.on('audio:chunk', (_event, buffer: ArrayBuffer, chunkIndex: number, mode: 'dictation' | 'instruction', sessionId?: string) => {
     console.log(`[main] Audio chunk ${chunkIndex} received (${buffer.byteLength} bytes, mode: ${mode})`)
-    sessionManager.receiveAudioChunk(Buffer.from(buffer), chunkIndex, mode)
+    sessionManager.receiveAudioChunk(Buffer.from(buffer), chunkIndex, mode, sessionId)
   })
 
-  ipcMain.on('audio:final-chunk', (_event, buffer: ArrayBuffer, chunkIndex: number, totalChunks: number, duration: number, mode: 'dictation' | 'instruction') => {
+  ipcMain.on('audio:final-chunk', (_event, buffer: ArrayBuffer, chunkIndex: number, totalChunks: number, duration: number, mode: 'dictation' | 'instruction', sessionId?: string) => {
     console.log(`[main] Final audio chunk ${chunkIndex} received (${buffer.byteLength} bytes, totalChunks: ${totalChunks}, mode: ${mode})`)
-    sessionManager.receiveAudioFinalChunk(Buffer.from(buffer), chunkIndex, totalChunks, duration, mode)
+    sessionManager.receiveAudioFinalChunk(Buffer.from(buffer), chunkIndex, totalChunks, duration, mode, sessionId)
   })
 
   ipcMain.on('session:retry', (_event, sessionId: string) => {

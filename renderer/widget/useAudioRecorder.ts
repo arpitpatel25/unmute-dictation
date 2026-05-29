@@ -6,7 +6,7 @@ interface UseAudioRecorderReturn {
   isRecording: boolean
   analyserNode: AnalyserNode | null
   maxDurationSeconds: number
-  startRecording: (deviceId?: string, mode?: RecordingMode) => Promise<void>
+  startRecording: (deviceId?: string, mode?: RecordingMode, sessionId?: string) => Promise<void>
   stopRecording: () => Promise<void>
 }
 
@@ -34,6 +34,9 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   const maxTimerRef = useRef<NodeJS.Timeout | null>(null)
   // Mode is frozen at recording start — survives even if startRecording is called again
   const frozenModeRef = useRef<RecordingMode>('dictation')
+  // Session ID this recording belongs to — sent with audio so the main process
+  // can reject a late buffer that belongs to a dictation that already ended.
+  const frozenSessionIdRef = useRef<string | undefined>(undefined)
   // Guard against double-sending audio
   const audioSentRef = useRef<boolean>(false)
 
@@ -133,7 +136,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     console.log(`[audio:vad] ${reason === 'silence' ? 'Silence detected' : 'Hard cap'}, cutting chunk ${chunkIdx} at ${elapsed}ms (${buffer.byteLength} bytes)`)
 
     // Send chunk to main process
-    window.electronAPI.sendAudioChunk(buffer, chunkIdx, mode)
+    window.electronAPI.sendAudioChunk(buffer, chunkIdx, mode, frozenSessionIdRef.current)
 
     // Increment chunk index and reset chunk start time
     chunkIndexRef.current = chunkIdx + 1
@@ -262,14 +265,14 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         const buffer = await blob.arrayBuffer()
         const totalChunks = chunkIndexRef.current + 1
         console.log(`[audio] Flushed FINAL chunk ${chunkIndexRef.current}/${totalChunks}, size: ${buffer.byteLength}, duration: ${duration}ms`)
-        window.electronAPI.sendAudioFinalChunk(buffer, chunkIndexRef.current, totalChunks, duration, mode)
+        window.electronAPI.sendAudioFinalChunk(buffer, chunkIndexRef.current, totalChunks, duration, mode, frozenSessionIdRef.current)
       } else {
         // No remaining data — send totalChunks based on what was already sent
         const totalChunks = chunkIndexRef.current
         console.log(`[audio] No remaining data for final chunk, totalChunks: ${totalChunks}`)
         // Send a minimal final chunk signal so sessionManager knows we're done
         const emptyBuffer = new ArrayBuffer(0)
-        window.electronAPI.sendAudioFinalChunk(emptyBuffer, chunkIndexRef.current, totalChunks, duration, mode)
+        window.electronAPI.sendAudioFinalChunk(emptyBuffer, chunkIndexRef.current, totalChunks, duration, mode, frozenSessionIdRef.current)
       }
 
       cleanupStream()
@@ -285,7 +288,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     // Discard if too short, empty, or silent (no speech) — no STT call
     if (duration < MIN_DURATION_MS || chunks.length === 0 || !heardSpeechRef.current) {
       console.log('[audio] Discarding (short/empty/silent). Duration:', duration, 'heardSpeech:', heardSpeechRef.current)
-      window.electronAPI.sendAudioDiscarded(frozenModeRef.current)
+      window.electronAPI.sendAudioDiscarded(frozenModeRef.current, frozenSessionIdRef.current)
       return false
     }
 
@@ -293,12 +296,13 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     const blob = new Blob(chunks, { type: 'audio/webm' })
     const buffer = await blob.arrayBuffer()
     console.log('[audio] Flushed audio, mode:', mode, 'size:', buffer.byteLength, 'duration:', duration)
-    window.electronAPI.sendAudioReady(buffer, duration, mode)
+    window.electronAPI.sendAudioReady(buffer, duration, mode, frozenSessionIdRef.current)
     return true
   }, [cleanupStream])
 
-  const startRecording = useCallback(async (deviceId?: string, mode?: RecordingMode) => {
-    // If there's an active recorder, flush it first (sends its audio with correct mode)
+  const startRecording = useCallback(async (deviceId?: string, mode?: RecordingMode, sessionId?: string) => {
+    // If there's an active recorder, flush it first (sends its audio with correct
+    // mode AND the previous session's frozen ID — set below only after the flush).
     const existingRecorder = mediaRecorderRef.current
     if (existingRecorder && existingRecorder.state !== 'inactive') {
       console.log('[audio] Flushing previous recording before starting new one (mode was:', frozenModeRef.current, ')')
@@ -307,6 +311,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
 
     // Reset state for new recording
     frozenModeRef.current = mode || 'dictation'
+    frozenSessionIdRef.current = sessionId
     audioSentRef.current = false
     heardSpeechRef.current = false
     chunksRef.current = []
@@ -479,7 +484,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         const wasChunked = chunkedModeEnabledRef.current && chunkIndexRef.current > 0
         if (duration < MIN_DURATION_MS || (!heardSpeechRef.current && !wasChunked)) {
           console.log('[audio] Discarding (short/silent). Duration:', duration, 'heardSpeech:', heardSpeechRef.current)
-          window.electronAPI.sendAudioDiscarded(mode)
+          window.electronAPI.sendAudioDiscarded(mode, frozenSessionIdRef.current)
           cleanupStream()
           resolve()
           return
@@ -497,13 +502,13 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
             const blob = new Blob(macroBlobs, { type: 'audio/webm' })
             const buffer = await blob.arrayBuffer()
             console.log(`[audio] Sending FINAL chunk ${chunkIndexRef.current}/${totalChunks}, size: ${buffer.byteLength}, duration: ${duration}ms`)
-            window.electronAPI.sendAudioFinalChunk(buffer, chunkIndexRef.current, totalChunks, duration, mode)
+            window.electronAPI.sendAudioFinalChunk(buffer, chunkIndexRef.current, totalChunks, duration, mode, frozenSessionIdRef.current)
           } else {
             // No remaining data — all audio was already sent in previous chunks
             console.log(`[audio] No remaining data — all ${chunkIndexRef.current} chunks already sent`)
             // Still send final signal so sessionManager knows total count
             const emptyBuffer = new ArrayBuffer(0)
-            window.electronAPI.sendAudioFinalChunk(emptyBuffer, chunkIndexRef.current, chunkIndexRef.current, duration, mode)
+            window.electronAPI.sendAudioFinalChunk(emptyBuffer, chunkIndexRef.current, chunkIndexRef.current, duration, mode, frozenSessionIdRef.current)
           }
 
           cleanupStream()
@@ -515,7 +520,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
         const buffer = await blob.arrayBuffer()
         console.log('[audio] Sending audio to main process, mode:', mode, 'size:', buffer.byteLength, 'duration:', duration)
-        window.electronAPI.sendAudioReady(buffer, duration, mode)
+        window.electronAPI.sendAudioReady(buffer, duration, mode, frozenSessionIdRef.current)
 
         cleanupStream()
         resolve()

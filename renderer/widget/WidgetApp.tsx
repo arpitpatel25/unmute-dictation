@@ -87,7 +87,7 @@ export default function WidgetApp() {
       soundEnabled = enabled
     }).catch(() => { /* ignore — default is true */ })
 
-    api.onRecordingStart(async (mode) => {
+    api.onRecordingStart(async (mode, sessionId) => {
       // Cancel any pending auto-hide from a previous session
       clearAutoHide()
 
@@ -95,7 +95,7 @@ export default function WidgetApp() {
       setEngineNotice(null)
       setState(mode === 'dictation' ? 'dictation-active' : 'instruction-active')
       try {
-        await startRecording(undefined, mode)
+        await startRecording(undefined, mode, sessionId)
       } catch {
         setErrorMessage('Mic error. Check settings.')
         setState('error')

@@ -2,20 +2,20 @@ import { contextBridge, ipcRenderer } from 'electron'
 
 const electronAPI = {
   // Recording control
-  onRecordingStart: (callback: (mode: 'dictation' | 'instruction') => void) => {
-    ipcRenderer.on('recording:start', (_event, mode) => callback(mode))
+  onRecordingStart: (callback: (mode: 'dictation' | 'instruction', sessionId?: string) => void) => {
+    ipcRenderer.on('recording:start', (_event, mode, sessionId) => callback(mode, sessionId))
   },
   onRecordingStop: (callback: () => void) => {
     ipcRenderer.on('recording:stop', () => callback())
   },
-  sendAudioReady: (buffer: ArrayBuffer, duration: number, mode: 'dictation' | 'instruction') => {
-    ipcRenderer.send('audio:ready', buffer, duration, mode)
+  sendAudioReady: (buffer: ArrayBuffer, duration: number, mode: 'dictation' | 'instruction', sessionId?: string) => {
+    ipcRenderer.send('audio:ready', buffer, duration, mode, sessionId)
   },
-  sendAudioChunk: (buffer: ArrayBuffer, chunkIndex: number, mode: 'dictation' | 'instruction') => {
-    ipcRenderer.send('audio:chunk', buffer, chunkIndex, mode)
+  sendAudioChunk: (buffer: ArrayBuffer, chunkIndex: number, mode: 'dictation' | 'instruction', sessionId?: string) => {
+    ipcRenderer.send('audio:chunk', buffer, chunkIndex, mode, sessionId)
   },
-  sendAudioFinalChunk: (buffer: ArrayBuffer, chunkIndex: number, totalChunks: number, duration: number, mode: 'dictation' | 'instruction') => {
-    ipcRenderer.send('audio:final-chunk', buffer, chunkIndex, totalChunks, duration, mode)
+  sendAudioFinalChunk: (buffer: ArrayBuffer, chunkIndex: number, totalChunks: number, duration: number, mode: 'dictation' | 'instruction', sessionId?: string) => {
+    ipcRenderer.send('audio:final-chunk', buffer, chunkIndex, totalChunks, duration, mode, sessionId)
   },
 
   // Output
@@ -57,8 +57,8 @@ const electronAPI = {
   onEngineNotice: (callback: (reason: string) => void) => {
     ipcRenderer.on('session:engine-notice', (_event, reason) => callback(reason))
   },
-  sendAudioDiscarded: (mode: 'dictation' | 'instruction') => {
-    ipcRenderer.send('audio:discarded', mode)
+  sendAudioDiscarded: (mode: 'dictation' | 'instruction', sessionId?: string) => {
+    ipcRenderer.send('audio:discarded', mode, sessionId)
   },
   sendQuotaBlocked: () => {
     ipcRenderer.send('quota:blocked')

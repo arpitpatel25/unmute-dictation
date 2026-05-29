@@ -24,11 +24,11 @@ export interface ServerConfig {
 }
 
 export interface ElectronAPI {
-  onRecordingStart: (callback: (mode: 'dictation' | 'instruction') => void) => void
+  onRecordingStart: (callback: (mode: 'dictation' | 'instruction', sessionId?: string) => void) => void
   onRecordingStop: (callback: () => void) => void
-  sendAudioReady: (buffer: ArrayBuffer, duration: number, mode: 'dictation' | 'instruction') => void
-  sendAudioChunk: (buffer: ArrayBuffer, chunkIndex: number, mode: 'dictation' | 'instruction') => void
-  sendAudioFinalChunk: (buffer: ArrayBuffer, chunkIndex: number, totalChunks: number, duration: number, mode: 'dictation' | 'instruction') => void
+  sendAudioReady: (buffer: ArrayBuffer, duration: number, mode: 'dictation' | 'instruction', sessionId?: string) => void
+  sendAudioChunk: (buffer: ArrayBuffer, chunkIndex: number, mode: 'dictation' | 'instruction', sessionId?: string) => void
+  sendAudioFinalChunk: (buffer: ArrayBuffer, chunkIndex: number, totalChunks: number, duration: number, mode: 'dictation' | 'instruction', sessionId?: string) => void
   onOutputReady: (callback: (text: string, sessionId: string) => void) => void
   onOutputFallback: (callback: (text: string, sessionId: string) => void) => void
   onOutputError: (callback: (error: string, sessionId: string) => void) => void
@@ -41,7 +41,7 @@ export interface ElectronAPI {
   onProcessingDiscardHint: (callback: () => void) => void
   onSessionTooShort: (callback: () => void) => void
   onEngineNotice: (callback: (reason: string) => void) => void
-  sendAudioDiscarded: (mode: 'dictation' | 'instruction') => void
+  sendAudioDiscarded: (mode: 'dictation' | 'instruction', sessionId?: string) => void
   sendQuotaBlocked: () => void
   getGroqKeyStatus: () => Promise<{ hasKey: boolean; masked: string | null }>
   setGroqKey: (key: string) => Promise<{ success: boolean; masked?: string | null; error?: string }>

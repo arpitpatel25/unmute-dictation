@@ -325,7 +325,7 @@ class SessionManager {
     // and can briefly interfere with macOS window focus/ordering
     showHUD()
     setTrayRecording(mode)
-    sendToWidget('recording:start', mode)
+    sendToWidget('recording:start', mode, this.currentSession.sessionId)
     console.log('[session] HUD shown, recording:start sent for mode:', mode)
 
     // Capture selected text AFTER HUD is shown — delay to let macOS
@@ -362,9 +362,21 @@ class SessionManager {
     this.cancelAutoHide()
     showHUD()
     setTrayRecording(mode)
-    sendToWidget('recording:start', mode)
+    sendToWidget('recording:start', mode, this.currentSession?.sessionId)
 
     this.onRecordingStarted?.()
+  }
+
+  /**
+   * True when an audio buffer is tagged with a session ID that belongs to
+   * neither the active nor the cancelled (undo) session — i.e. a late buffer
+   * from a dictation that already ended. Lenient: an absent ID is accepted, so
+   * this can never reject a clip on the normal path.
+   */
+  private isForeignSessionAudio(sessionId?: string): boolean {
+    if (!sessionId) return false
+    return sessionId !== this.currentSession?.sessionId &&
+           sessionId !== this.cancelledSession?.sessionId
   }
 
   async stopRecording(mode: 'dictation' | 'instruction'): Promise<void> {
@@ -385,7 +397,11 @@ class SessionManager {
 
   // ─── Chunked transcription methods ───
 
-  receiveAudioChunk(buffer: Buffer, chunkIndex: number, mode: 'dictation' | 'instruction'): void {
+  receiveAudioChunk(buffer: Buffer, chunkIndex: number, mode: 'dictation' | 'instruction', sessionId?: string): void {
+    if (this.isForeignSessionAudio(sessionId)) {
+      console.warn(`[session] ⏭️ Dropping stale chunk ${chunkIndex} for ended session ${sessionId} (current: ${this.currentSession?.sessionId || 'none'})`)
+      return
+    }
     const session = this.currentSession
     if (!session) {
       console.warn('[session] receiveAudioChunk called but no current session!')
@@ -417,7 +433,11 @@ class SessionManager {
     chunkState.transcriptionPromise = this.transcribeChunk(buffer, chunkIndex)
   }
 
-  receiveAudioFinalChunk(buffer: Buffer, chunkIndex: number, totalChunks: number, duration: number, mode: 'dictation' | 'instruction'): void {
+  receiveAudioFinalChunk(buffer: Buffer, chunkIndex: number, totalChunks: number, duration: number, mode: 'dictation' | 'instruction', sessionId?: string): void {
+    if (this.isForeignSessionAudio(sessionId)) {
+      console.warn(`[session] ⏭️ Dropping stale final chunk ${chunkIndex} for ended session ${sessionId} (current: ${this.currentSession?.sessionId || 'none'})`)
+      return
+    }
     const session = this.currentSession
     if (!session) {
       console.warn('[session] receiveAudioFinalChunk called but no current session!')
@@ -540,7 +560,13 @@ class SessionManager {
     this.isChunkedSession = false
   }
 
-  receiveAudio(buffer: Buffer, duration: number, mode: 'dictation' | 'instruction'): void {
+  receiveAudio(buffer: Buffer, duration: number, mode: 'dictation' | 'instruction', sessionId?: string): void {
+    // Reject a late buffer from a dictation that already ended — it would
+    // otherwise land in (and overwrite) the slot of whatever session is current.
+    if (this.isForeignSessionAudio(sessionId)) {
+      console.warn(`[session] ⏭️ Dropping stale audio for ended session ${sessionId} (current: ${this.currentSession?.sessionId || 'none'}, cancelled: ${this.cancelledSession?.sessionId || 'none'})`)
+      return
+    }
     // Audio may arrive after cancel (since IPC is async) — check cancelledSession too
     const session = this.currentSession || this.cancelledSession
     if (!session) {
@@ -1284,8 +1310,12 @@ class SessionManager {
 
   /** Discard current session immediately (recording was too short, no audio to process).
    *  Shows brief "too short" feedback on HUD then cleans up. */
-  discardSession(): void {
+  discardSession(sessionId?: string): void {
     if (!this.currentSession) return
+    if (sessionId && sessionId !== this.currentSession.sessionId) {
+      console.warn(`[session] ⏭️ Ignoring stale discard for ended session ${sessionId} (current: ${this.currentSession.sessionId})`)
+      return
+    }
 
     console.log('[session] Session DISCARDED (too short):', this.currentSession.sessionId)
 
