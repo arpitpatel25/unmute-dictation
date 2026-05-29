@@ -49,45 +49,51 @@ function rowCost(row: UsageRow): number {
   return cost
 }
 
-export interface UsageSummary {
-  /** Estimated USD spent today (local time). */
-  today: number
-  /** Estimated USD spent this calendar month (local time). */
-  month: number
-  /** Estimated USD spent all-time. */
-  allTime: number
-  /** All-time raw usage units behind the estimate. */
-  totals: {
-    inputTokens: number
-    outputTokens: number
-    sttSeconds: number
-  }
+/** Estimated cost plus the raw units behind it, for one time window. */
+export interface UsageWindow {
+  /** Estimated USD spent in this window. */
+  cost: number
+  inputTokens: number
+  outputTokens: number
+  /** Seconds of audio transcribed. */
+  sttSeconds: number
 }
 
-/** Combined estimated dollar totals across today / this month / all-time. */
+export interface UsageSummary {
+  today: UsageWindow
+  month: UsageWindow
+  allTime: UsageWindow
+}
+
+function emptyWindow(): UsageWindow {
+  return { cost: 0, inputTokens: 0, outputTokens: 0, sttSeconds: 0 }
+}
+
+function addRow(w: UsageWindow, row: UsageRow, cost: number): void {
+  w.cost += cost
+  w.inputTokens += row.input_tokens
+  w.outputTokens += row.output_tokens
+  w.sttSeconds += row.stt_seconds
+}
+
+/** Per-window estimated cost + raw usage across today / this month / all-time. */
 export function getUsageSummary(): UsageSummary {
-  let today = 0
-  let month = 0
-  let allTime = 0
-  let inputTokens = 0
-  let outputTokens = 0
-  let sttSeconds = 0
+  const today = emptyWindow()
+  const month = emptyWindow()
+  const allTime = emptyWindow()
   try {
     const todayStr = localDateStr()
     const monthStr = todayStr.slice(0, 7) // YYYY-MM
     for (const row of getUsageRows()) {
       const cost = rowCost(row)
-      allTime += cost
-      if (row.date.startsWith(monthStr)) month += cost
-      if (row.date === todayStr) today += cost
-      inputTokens += row.input_tokens
-      outputTokens += row.output_tokens
-      sttSeconds += row.stt_seconds
+      addRow(allTime, row, cost)
+      if (row.date.startsWith(monthStr)) addRow(month, row, cost)
+      if (row.date === todayStr) addRow(today, row, cost)
     }
   } catch (err) {
     console.warn('[usage] failed to summarize usage:', err instanceof Error ? err.message : err)
   }
-  return { today, month, allTime, totals: { inputTokens, outputTokens, sttSeconds } }
+  return { today, month, allTime }
 }
 
 /** Wipe all recorded usage (the Settings "Reset" button). */

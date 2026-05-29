@@ -23,19 +23,20 @@ export interface ServerConfig {
   }
 }
 
+/** Estimated cost plus the raw units behind it, for one time window. */
+export interface UsageWindow {
+  /** Estimated USD spent in this window. */
+  cost: number
+  inputTokens: number
+  outputTokens: number
+  /** Seconds of audio transcribed. */
+  sttSeconds: number
+}
+
 export interface UsageSummary {
-  /** Estimated USD spent today (local time). */
-  today: number
-  /** Estimated USD spent this calendar month (local time). */
-  month: number
-  /** Estimated USD spent all-time. */
-  allTime: number
-  /** All-time raw usage units behind the estimate. */
-  totals: {
-    inputTokens: number
-    outputTokens: number
-    sttSeconds: number
-  }
+  today: UsageWindow
+  month: UsageWindow
+  allTime: UsageWindow
 }
 
 export interface ElectronAPI {

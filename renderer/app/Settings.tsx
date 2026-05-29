@@ -30,6 +30,7 @@ export default function Settings({ onDictationKeyChange }: SettingsProps = {}) {
 
   // Groq usage (local estimated cost)
   const [usage, setUsage] = useState<UsageSummary | null>(null)
+  const [usageWindow, setUsageWindow] = useState<'today' | 'month' | 'allTime'>('today')
   const [usageResetting, setUsageResetting] = useState(false)
 
   useEffect(() => {
@@ -215,17 +216,41 @@ export default function Settings({ onDictationKeyChange }: SettingsProps = {}) {
       <SectionHeader icon={<UsageIcon />} title="Usage" />
       <div className="bg-surface-2 border border-border rounded-2xl overflow-hidden mb-3 shadow-sm">
         <div className="px-5 py-4">
-          <div className="flex gap-2.5">
-            <UsageStat label="Today" value={fmtUsd(usage?.today)} />
-            <UsageStat label="This month" value={fmtUsd(usage?.month)} />
-            <UsageStat label="All time" value={fmtUsd(usage?.allTime)} />
+          {/* Window selector */}
+          <div className="flex justify-center mb-4">
+            <SegmentedControl
+              options={[
+                { value: 'today', label: 'Today' },
+                { value: 'month', label: 'This month' },
+                { value: 'allTime', label: 'All time' },
+              ]}
+              value={usageWindow}
+              onChange={(v) => setUsageWindow(v as 'today' | 'month' | 'allTime')}
+            />
           </div>
-          {usage && (
-            <p className="text-[11px] text-ink-60 mt-2.5 tabular-nums">
-              All-time: {fmtCount(usage.totals.inputTokens)} in · {fmtCount(usage.totals.outputTokens)} out tokens · {fmtMinutes(usage.totals.sttSeconds)} transcribed
+
+          {/* Selected-window estimated cost */}
+          <div className="text-center mb-4">
+            <p className="text-[34px] font-bold text-ink tabular-nums tracking-tight leading-none">
+              {fmtUsd(usage?.[usageWindow].cost)}
             </p>
-          )}
-          <div className="flex items-center justify-between mt-3">
+            <p className="text-[10px] font-medium text-ink-35 uppercase tracking-[0.1em] mt-1.5">
+              Estimated spend
+            </p>
+          </div>
+
+          {/* Breakdown */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <UsageDetail
+              label="Total tokens"
+              value={fmtCount(usage ? usage[usageWindow].inputTokens + usage[usageWindow].outputTokens : undefined)}
+            />
+            <UsageDetail label="Duration" value={fmtDuration(usage?.[usageWindow].sttSeconds)} />
+            <UsageDetail label="Input tokens" value={fmtCount(usage?.[usageWindow].inputTokens)} />
+            <UsageDetail label="Output tokens" value={fmtCount(usage?.[usageWindow].outputTokens)} />
+          </div>
+
+          <div className="flex items-center justify-between mt-4">
             <p className="text-[11px] text-ink-35 leading-snug pr-3">
               Estimated from Groq pricing — actual charges may differ. Local
               transcription and other providers aren’t counted.
@@ -413,15 +438,17 @@ function fmtUsd(n: number | undefined): string {
   return '$' + n.toFixed(2)
 }
 
-/** Compact count: 1234 → "1.2K", 1_200_000 → "1.2M". */
-function fmtCount(n: number): string {
+/** Compact count: 1234 → "1.2K", 1_200_000 → "1.2M". Undefined → "—". */
+function fmtCount(n: number | undefined): string {
+  if (n === undefined) return '—'
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M'
   if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K'
   return String(n)
 }
 
-/** Audio seconds → "Xs" / "X.X min" / "Xh Ym". */
-function fmtMinutes(seconds: number): string {
+/** Audio seconds → "Xs" / "X.X min" / "Xh Ym". Undefined → "—". */
+function fmtDuration(seconds: number | undefined): string {
+  if (seconds === undefined) return '—'
   if (seconds < 60) return Math.round(seconds) + 's'
   if (seconds < 3600) return (seconds / 60).toFixed(1).replace(/\.0$/, '') + ' min'
   const h = Math.floor(seconds / 3600)
@@ -429,11 +456,11 @@ function fmtMinutes(seconds: number): string {
   return `${h}h ${m}m`
 }
 
-function UsageStat({ label, value }: { label: string; value: string }) {
+function UsageDetail({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex-1 bg-cream-mid border border-border rounded-[12px] px-3.5 py-3 text-center">
-      <p className="text-[18px] font-bold text-ink tabular-nums tracking-tight">{value}</p>
-      <p className="text-[10px] font-medium text-ink-35 uppercase tracking-[0.08em] mt-0.5">{label}</p>
+    <div className="bg-cream-mid border border-border rounded-[12px] px-3.5 py-2.5 flex items-center justify-between">
+      <span className="text-[11px] font-medium text-ink-60">{label}</span>
+      <span className="text-[13px] font-bold text-ink tabular-nums tracking-tight">{value}</span>
     </div>
   )
 }
