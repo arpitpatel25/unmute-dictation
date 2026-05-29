@@ -1,6 +1,6 @@
 {
   "name": "unmute",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Voice-first text manipulation desktop app",
   "main": "./dist/electron/main.js",
   "scripts": {
@@ -33,11 +33,26 @@
       "package.json"
     ],
     "extraResources": [
-      { "from": "resources/bin", "to": "bin" },
-      { "from": "resources/lib", "to": "lib" },
-      { "from": "resources/faster-whisper", "to": "faster-whisper" },
-      { "from": "resources/icon.icns", "to": "icon.icns" },
-      { "from": "resources/menubar-icon.png", "to": "menubar-icon.png" }
+      {
+        "from": "resources/bin",
+        "to": "bin"
+      },
+      {
+        "from": "resources/lib",
+        "to": "lib"
+      },
+      {
+        "from": "resources/faster-whisper",
+        "to": "faster-whisper"
+      },
+      {
+        "from": "resources/icon.icns",
+        "to": "icon.icns"
+      },
+      {
+        "from": "resources/menubar-icon.png",
+        "to": "menubar-icon.png"
+      }
     ],
     "asar": true,
     "asarUnpack": [
@@ -48,7 +63,12 @@
       "category": "public.app-category.productivity",
       "icon": "resources/icon.icns",
       "target": [
-        { "target": "dmg", "arch": ["arm64"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
       ],
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
@@ -63,8 +83,16 @@
     "dmg": {
       "title": "${productName} ${version}",
       "contents": [
-        { "x": 140, "y": 220 },
-        { "x": 400, "y": 220, "type": "link", "path": "/Applications" }
+        {
+          "x": 140,
+          "y": 220
+        },
+        {
+          "x": 400,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
     }
   },
