@@ -36,7 +36,8 @@
       { "from": "resources/bin", "to": "bin" },
       { "from": "resources/lib", "to": "lib" },
       { "from": "resources/faster-whisper", "to": "faster-whisper" },
-      { "from": "resources/icon.icns", "to": "icon.icns" }
+      { "from": "resources/icon.icns", "to": "icon.icns" },
+      { "from": "resources/menubar-icon.png", "to": "menubar-icon.png" }
     ],
     "asar": true,
     "asarUnpack": [
