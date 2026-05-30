@@ -40,15 +40,25 @@ function isLLMRefusal(text: string): boolean {
 }
 
 /**
+ * Special bracketed tokens whisper.cpp emits for non-speech segments.
+ * They must be stripped wherever they appear — including mid-transcript when
+ * chunked dictation stitches a silent chunk between two spoken ones.
+ */
+const WHISPER_SENTINELS_RE = /\[\s*(?:BLANK_AUDIO|SILENCE|\*SILENCE\*|MUSIC|INAUDIBLE|NO\s*SPEECH|NOISE|SOUND|APPLAUSE|LAUGHTER)\s*\]/gi
+
+/**
  * Lightweight deterministic cleanup for raw dictation output — no LLM.
- * Trims, normalises whitespace, and strips trailing Whisper hallucinations
- * that commonly appear on terminal silence (e.g. "Thank you.",
- * "Thanks for watching.", "Please subscribe.").
+ * Trims, normalises whitespace, strips whisper.cpp non-speech sentinels
+ * (anywhere in the text, not just when the whole transcript is one), and
+ * removes trailing hallucinations that commonly appear on terminal silence
+ * (e.g. "Thank you.", "Thanks for watching.", "Please subscribe.").
  */
 export function cleanTranscript(text: string): string {
   if (!text) return ''
-  let t = text.replace(/\r/g, '').trim()
-  if (t === '[BLANK_AUDIO]') return ''
+  let t = text.replace(/\r/g, '')
+  // Drop whisper sentinels wherever they appear (chunk-level or whole-string).
+  t = t.replace(WHISPER_SENTINELS_RE, ' ').trim()
+  if (!t) return ''
   // normalise runs of spaces/tabs and excessive blank lines
   t = t.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n')
   // strip well-known trailing STT hallucinations on silence
@@ -58,7 +68,12 @@ export function cleanTranscript(text: string): string {
 
 /** Join per-chunk transcripts into one clean block (deterministic, no LLM). */
 function stitchChunks(transcripts: string[]): string {
-  return cleanTranscript(transcripts.map((t) => t.trim()).filter(Boolean).join(' '))
+  // Strip sentinels per-chunk first so a silent chunk doesn't survive the
+  // join, then run the full cleanup on the stitched whole.
+  const cleaned = transcripts
+    .map((t) => t.replace(WHISPER_SENTINELS_RE, ' ').trim())
+    .filter(Boolean)
+  return cleanTranscript(cleaned.join(' '))
 }
 
 interface SessionState {
