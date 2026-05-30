@@ -97,6 +97,9 @@ const electronAPI = {
   openAccessibilitySettings: () => {
     ipcRenderer.send('permissions:open-accessibility-settings')
   },
+  openKeyboardSettings: () => {
+    ipcRenderer.send('permissions:open-keyboard-settings')
+  },
   getAccessibilityStatus: (): Promise<boolean> => ipcRenderer.invoke('permissions:accessibility-status'),
   requestAccessibility: (): Promise<boolean> => ipcRenderer.invoke('permissions:request-accessibility'),
 

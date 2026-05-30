@@ -1,7 +1,7 @@
 export default function Voice() {
   return (
     <div className="max-w-2xl pb-12">
-      <h2 className="font-display text-[22px] font-bold text-ink tracking-tight mb-1">Voice</h2>
+      <h2 className="font-display text-[22px] font-bold text-ink tracking-tight mb-1">Features</h2>
       <p className="text-[13px] text-ink-35 mb-6">Dictate, instruct, and chain — all from your keyboard.</p>
 
       {/* Intro callout */}

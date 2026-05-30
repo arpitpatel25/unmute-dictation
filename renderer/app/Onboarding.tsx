@@ -373,10 +373,21 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           textColor="text-white"
         />
       </div>
-      <div className="px-5 py-3 rounded-xl bg-accent/[0.04] border border-accent/[0.08] mb-8 max-w-[360px]">
+      <div className="px-5 py-3 rounded-xl bg-accent/[0.04] border border-accent/[0.08] mb-3 max-w-[360px]">
         <p className="text-[12px] text-ink-60 leading-relaxed">
           <span className="font-display font-bold text-accent">Pro tip:</span> chain them — dictate with Fn, then immediately tap Caps Lock to refine what you just said.
         </p>
+      </div>
+      <div className="px-5 py-3 rounded-xl bg-warm-soft border border-warm/15 mb-8 max-w-[360px] text-left">
+        <p className="text-[12px] text-ink-60 leading-relaxed">
+          <span className="font-display font-bold text-warm">One macOS tweak:</span> by default, Fn shows emoji or triggers Apple Dictation. Open <span className="font-semibold text-ink">System Settings → Keyboard</span> and set <span className="font-semibold text-ink">"Press 🌐 key to"</span> → <span className="font-semibold text-ink">Do Nothing</span> to free Fn for unmute.
+        </p>
+        <button
+          onClick={() => window.electronAPI.openKeyboardSettings()}
+          className="mt-2 px-3 py-1.5 rounded-full border border-warm/25 text-[11px] font-semibold text-warm hover:bg-warm/[0.08] transition-all"
+        >
+          Open Keyboard Settings
+        </button>
       </div>
       <button onClick={next} className="px-10 py-3.5 rounded-full bg-accent text-white font-display font-semibold text-[14px] hover:bg-accent-hover transition-all duration-200 shadow-sm hover:shadow-md">
         Continue

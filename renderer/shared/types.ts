@@ -73,6 +73,7 @@ export interface ElectronAPI {
   requestMicPermission: () => Promise<boolean>
   openMicSettings: () => void
   openAccessibilitySettings: () => void
+  openKeyboardSettings: () => void
   getAccessibilityStatus: () => Promise<boolean>
   requestAccessibility: () => Promise<boolean>
   setLLMProvider: (provider: 'cloud' | 'local-llm') => void

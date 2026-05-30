@@ -75,7 +75,7 @@ export default function App() {
           />
           <SidebarButton
             icon={<VoiceIcon />}
-            label="Voice"
+            label="Features"
             active={activeTab === 'voice'}
             onClick={() => setActiveTab('voice')}
           />

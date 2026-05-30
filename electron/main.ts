@@ -758,6 +758,15 @@ function setupIPC(): void {
     shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility')
   })
 
+  // Keyboard settings — used to point users at "Press 🌐 / Fn key to: Do
+  // Nothing", which frees the Fn key for unmute. The new System Settings URL
+  // works on macOS 13+; the legacy preferences URL is the fallback.
+  ipcMain.on('permissions:open-keyboard-settings', () => {
+    shell.openExternal('x-apple.systempreferences:com.apple.Keyboard-Settings.extension').catch(() => {
+      shell.openExternal('x-apple.systempreferences:com.apple.preference.keyboard')
+    })
+  })
+
   // Whether the app is trusted for Accessibility (needed for global key
   // detection AND pasting at the cursor). Pass prompt=false to just check.
   ipcMain.handle('permissions:accessibility-status', () => {
