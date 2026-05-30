@@ -15,7 +15,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..700,0..100&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
 
 <style>
   :root {
@@ -57,7 +57,7 @@
   }
 
   /* ─── Layout ─── */
-  .wrap { max-width: 720px; margin: 0 auto; padding: 0 32px; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 28px; }
   nav {
     display: flex; justify-content: space-between; align-items: baseline;
     padding: 36px 0 0;
@@ -87,11 +87,41 @@
   }
   .kbd-lg {
     padding: 12px 18px; min-height: 46px; min-width: 46px;
-    font-size: 15px; border-radius: 10px;
+    font-size: 14.5px; border-radius: 10px;
     box-shadow:
       0 4px 0 rgba(42,30,24,0.22),
       0 6px 14px rgba(42,30,24,0.10),
       inset 0 1px 0 rgba(255,255,255,0.95);
+  }
+  .kbd-black {
+    background: linear-gradient(180deg, #2E2A25 0%, #14110F 100%);
+    color: rgba(255,255,255,0.95);
+    border-color: rgba(0,0,0,0.55);
+    box-shadow:
+      0 3px 0 rgba(0,0,0,0.55),
+      0 4px 10px rgba(0,0,0,0.22),
+      inset 0 1px 0 rgba(255,255,255,0.14);
+  }
+  .kbd-black.kbd-lg {
+    box-shadow:
+      0 4px 0 rgba(0,0,0,0.55),
+      0 6px 14px rgba(0,0,0,0.30),
+      inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+  .kbd-red {
+    background: linear-gradient(180deg, #F04040 0%, #C82828 100%);
+    color: white;
+    border-color: rgba(0,0,0,0.35);
+    box-shadow:
+      0 3px 0 #8a1a1a,
+      0 4px 10px rgba(200,30,30,0.22),
+      inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .kbd-red.kbd-lg {
+    box-shadow:
+      0 4px 0 #7a1010,
+      0 6px 14px rgba(200,30,30,0.30),
+      inset 0 1px 0 rgba(255,255,255,0.22);
   }
   .combo { display: inline-flex; align-items: center; gap: 8px; }
   .combo .arrow { color: var(--ink-30); font-size: 13px; }
@@ -101,10 +131,9 @@
   .key-row { display: flex; align-items: flex-start; gap: 20px; }
   .key-row > .kbd, .key-row > .combo { flex-shrink: 0; margin-top: 2px; }
   .key-name {
-    font-family: 'Fraunces', serif; font-weight: 500;
+    font-family: 'Instrument Serif', 'Times New Roman', serif; font-weight: 500;
     font-size: 18px; letter-spacing: -0.01em; color: var(--ink);
     margin-bottom: 3px;
-    font-variation-settings: "SOFT" 100;
   }
   .key-desc { font-size: 15.5px; color: var(--ink-70); line-height: 1.55; }
   .key-desc em { font-style: italic; color: var(--ink); font-weight: 500; }
@@ -116,34 +145,32 @@
   nav a.link:hover { color: var(--ink); border-bottom-color: var(--ink-30); }
 
   /* ─── Hero ─── */
-  .hero { padding: 22vh 0 0; }
+  .hero { padding: 12vh 0 0; }
   .eyebrow {
     font-size: 12px; color: var(--ink-50); letter-spacing: 0.16em;
     text-transform: uppercase; font-weight: 500; margin: 0 0 28px;
   }
   h1 {
-    font-family: 'Fraunces', serif;
+    font-family: 'Instrument Serif', 'Times New Roman', serif;
     font-weight: 400;
-    font-size: clamp(54px, 9vw, 96px);
-    line-height: 0.95;
-    letter-spacing: -0.035em;
+    font-size: clamp(60px, 10vw, 108px);
+    line-height: 0.96;
+    letter-spacing: -0.02em;
     margin: 0 0 28px;
     color: var(--ink);
-    font-variation-settings: "SOFT" 60, "opsz" 144;
   }
   h1 em {
     font-style: italic;
-    font-weight: 300;
     color: var(--accent);
-    font-variation-settings: "SOFT" 100, "opsz" 144;
+    letter-spacing: -0.015em;
   }
   .lede {
-    font-family: 'Fraunces', serif;
-    font-weight: 300;
-    font-size: clamp(19px, 2.2vw, 23px);
-    line-height: 1.5;
+    font-family: 'Instrument Serif', 'Times New Roman', serif;
+    font-weight: 400;
+    font-size: clamp(20px, 2.2vw, 25px);
+    line-height: 1.45;
     color: var(--ink-70);
-    max-width: 540px;
+    max-width: 560px;
     margin: 0 0 44px;
     letter-spacing: -0.005em;
   }
@@ -202,31 +229,29 @@
 
   /* ─── Manifesto sections ─── */
   .stanzas {
-    padding: 18vh 0 12vh;
-    display: flex; flex-direction: column; gap: 7vh;
+    padding: 11vh 0 9vh;
+    display: flex; flex-direction: column; gap: 6vh;
   }
   .stanza {
-    max-width: 560px;
+    max-width: 640px;
   }
   .stanza .mark {
-    font-family: 'Fraunces', serif;
+    font-family: 'Instrument Serif', 'Times New Roman', serif;
     font-weight: 500;
     font-style: italic;
     font-size: 13px;
     color: var(--accent);
     letter-spacing: 0.02em;
     margin: 0 0 14px;
-    font-variation-settings: "SOFT" 100;
   }
   .stanza h2 {
-    font-family: 'Fraunces', serif;
+    font-family: 'Instrument Serif', 'Times New Roman', serif;
     font-weight: 400;
     font-size: clamp(26px, 3.4vw, 36px);
     letter-spacing: -0.022em;
     line-height: 1.15;
     margin: 0 0 14px;
     color: var(--ink);
-    font-variation-settings: "SOFT" 60, "opsz" 96;
   }
   .stanza h2 em {
     font-style: italic;
@@ -264,7 +289,7 @@
     transition: color .15s;
   }
   .foot a:hover { color: var(--ink); }
-  .foot .heart { font-family: 'Fraunces', serif; font-style: italic; }
+  .foot .heart { font-family: 'Instrument Serif', 'Times New Roman', serif; font-style: italic; }
 
   @media (max-width: 600px) {
     .wrap { padding: 0 22px; }
@@ -284,6 +309,7 @@
         <img src="unmute-logo.png" alt="unmute" class="brand-mark" />
       </a>
       <div class="right">
+        <a class="link" href="https://x.com/just_unmute">Twitter</a>
         <a class="link" href="https://github.com/arpitpatel25/unmute-dictation">GitHub</a>
         <a class="link" href="https://github.com/arpitpatel25/unmute-dictation/discussions">Community</a>
       </div>
@@ -326,7 +352,7 @@
 
         <div class="key-block">
           <div class="key-row">
-            <span class="kbd kbd-lg">Fn</span>
+            <span class="kbd kbd-lg kbd-black">Fn</span>
             <div>
               <div class="key-name">Pure dictation</div>
               <div class="key-desc">Tap once to start, speak, tap again to send. Raw text lands at your cursor in any app — Slack, email, code, anywhere.</div>
@@ -334,7 +360,7 @@
           </div>
 
           <div class="key-row">
-            <span class="kbd kbd-lg">⇪</span>
+            <span class="kbd kbd-lg kbd-red">Caps Lock</span>
             <div>
               <div class="key-name">Voice instruction</div>
               <div class="key-desc">Same rhythm — tap, speak a command, tap. Select a Slack thread and say <em>"reply that I can't make the call, I'm out sick"</em> → it writes the message in the input. Select a paragraph and say <em>"three bullets"</em> → done.</div>
@@ -342,10 +368,10 @@
           </div>
 
           <div class="key-row">
-            <span class="combo"><span class="kbd">Fn</span><span class="arrow">→</span><span class="kbd">⇪</span></span>
+            <span class="combo"><span class="kbd kbd-black">Fn</span><span class="arrow">→</span><span class="kbd kbd-red">Caps Lock</span></span>
             <div>
               <div class="key-name">Chain them</div>
-              <div class="key-desc">Brain-dump with <span class="kbd">Fn</span>, then immediately tap <span class="kbd">⇪</span> and tell it how to shape what you said. Rough thought → polished message in one breath.</div>
+              <div class="key-desc">Brain-dump with <span class="kbd kbd-black">Fn</span>, then immediately tap <span class="kbd kbd-red">Caps Lock</span> and tell it how to shape what you said. Rough thought → polished message in one breath.</div>
             </div>
           </div>
         </div>
@@ -355,7 +381,7 @@
         <p class="mark">— Raw by default</p>
         <h2>You don't format what you paste <em>into a chatbot.</em></h2>
         <p>Most of dictation today ends up in ChatGPT, Claude, Cursor. LLMs don't need your commas. They read raw thought just fine — at the same accuracy.</p>
-        <p>So unmute pastes raw, like a fast typist would. Want it formatted? Tap <span class="kbd">⇪</span> and ask — <em>"clean this up,"</em> <em>"three bullets,"</em> <em>"translate to Hindi."</em> Two seconds, done.</p>
+        <p>So unmute pastes raw, like a fast typist would. Want it formatted? Tap <span class="kbd kbd-red">Caps Lock</span> and ask — <em>"clean this up,"</em> <em>"three bullets,"</em> <em>"translate to Hindi."</em> Two seconds, done.</p>
       </div>
 
       <div class="stanza">
@@ -382,6 +408,7 @@
       <div class="foot">
         <div>© 2026 Arpit Patel · MIT</div>
         <div class="links">
+          <a href="https://x.com/just_unmute">Twitter</a>
           <a href="https://github.com/arpitpatel25/unmute-dictation">Source</a>
           <a href="https://github.com/arpitpatel25/unmute-dictation/releases">Releases</a>
           <a href="https://github.com/arpitpatel25/unmute-dictation/discussions">Community</a>
