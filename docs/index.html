@@ -4,356 +4,327 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>unmute — voice-first dictation for macOS</title>
-<meta name="description" content="A fast, local-first voice dictation app for macOS. Speak anywhere, your words appear at the cursor. Open source, BYO Groq key." />
+<meta name="description" content="A local-first voice dictation app for macOS. Free, open source, bring your own Groq key — or run fully on-device." />
 <link rel="icon" type="image/png" href="icon.png" />
 
-<!-- Social preview -->
-<meta property="og:title" content="unmute — voice-first dictation for macOS" />
-<meta property="og:description" content="Speak anywhere, your words appear at the cursor. Local-first, open source, free." />
+<meta property="og:title" content="unmute" />
+<meta property="og:description" content="Typing sucks. Just unmute." />
 <meta property="og:image" content="https://arpitpatel25.github.io/unmute-dictation/icon.png" />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary_large_image" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..700,0..100&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
 
 <style>
   :root {
-    --bg: #0B0A09;
-    --bg-2: #14110F;
-    --ink: #FAFAF6;
-    --ink-60: rgba(250,250,246,0.62);
-    --ink-35: rgba(250,250,246,0.38);
-    --ink-12: rgba(250,250,246,0.12);
-    --ink-07: rgba(250,250,246,0.07);
-    --accent: #E03030;
-    --accent-soft: rgba(224,48,48,0.18);
-    --warm: #FF8C42;
+    --ink: #2A1E18;
+    --ink-70: rgba(42,30,24,0.72);
+    --ink-50: rgba(42,30,24,0.50);
+    --ink-30: rgba(42,30,24,0.30);
+    --ink-15: rgba(42,30,24,0.15);
+    --ink-08: rgba(42,30,24,0.08);
+    --paper: #FDF8F4;
+    --accent: #C44A2E;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); }
+  html, body { margin: 0; padding: 0; }
   body {
+    background: var(--paper);
+    color: var(--ink);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     font-feature-settings: 'cv11', 'ss01', 'ss03';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    line-height: 1.5;
+    line-height: 1.55;
+    min-height: 100vh;
     overflow-x: hidden;
   }
 
-  /* ─── Gradient mesh background ─── */
-  .mesh {
-    position: fixed; inset: 0; z-index: -1;
+  /* ─── Watercolor BG ─── */
+  .bg {
+    position: fixed; inset: 0; z-index: -2;
     background:
-      radial-gradient(800px circle at 18% 12%, rgba(224,48,48,0.25), transparent 55%),
-      radial-gradient(700px circle at 82% 0%, rgba(255,140,66,0.18), transparent 60%),
-      radial-gradient(900px circle at 50% 110%, rgba(110,40,200,0.16), transparent 55%),
-      linear-gradient(180deg, #0B0A09 0%, #14110F 100%);
-    filter: saturate(1.05);
+      linear-gradient(180deg, rgba(253,248,244,0) 0%, rgba(253,248,244,0.55) 70%, rgba(253,248,244,0.92) 100%),
+      url('bg.avif') center / cover no-repeat;
+    background-color: var(--paper);
   }
-  .grain {
-    position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0.07;
-    background-image:
-      radial-gradient(rgba(255,255,255,0.5) 1px, transparent 1px);
-    background-size: 3px 3px;
-    mix-blend-mode: overlay;
+  .bg::after {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 30%, transparent 0%, rgba(253,248,244,0.35) 65%, rgba(253,248,244,0.75) 100%);
+    pointer-events: none;
   }
 
   /* ─── Layout ─── */
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 28px; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 32px; }
   nav {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 26px 0;
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 36px 0 0;
   }
-  .brand { display: flex; align-items: center; gap: 10px; }
-  .brand img { width: 26px; height: 26px; border-radius: 6px; }
-  .brand-name {
-    font-weight: 800; font-size: 17px; letter-spacing: -0.01em;
+  .brand {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-style: italic;
+    font-size: 19px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    text-decoration: none;
+    font-variation-settings: "SOFT" 100;
   }
-  .brand-dot {
-    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
-    background: var(--accent); margin-left: 6px;
-    animation: pulse 2.6s ease-in-out infinite;
+  nav .right { display: flex; gap: 24px; font-size: 13px; }
+  nav a.link {
+    color: var(--ink-70); text-decoration: none;
+    border-bottom: 1px solid transparent; transition: all .2s;
   }
-  @keyframes pulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
-  nav .links { display: flex; gap: 22px; }
-  nav .links a {
-    color: var(--ink-60); text-decoration: none; font-size: 14px;
-    font-weight: 500; transition: color .15s;
-  }
-  nav .links a:hover { color: var(--ink); }
+  nav a.link:hover { color: var(--ink); border-bottom-color: var(--ink-30); }
 
   /* ─── Hero ─── */
-  .hero { padding: 64px 0 96px; text-align: center; }
-  .badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 6px 14px; border-radius: 999px;
-    background: var(--ink-07); border: 1px solid var(--ink-12);
-    font-size: 12px; color: var(--ink-60); font-weight: 500;
-    margin-bottom: 28px;
-  }
-  .badge .pip {
-    width: 6px; height: 6px; border-radius: 50%; background: #00C896;
-    box-shadow: 0 0 0 4px rgba(0,200,150,0.18);
+  .hero { padding: 22vh 0 0; }
+  .eyebrow {
+    font-size: 12px; color: var(--ink-50); letter-spacing: 0.16em;
+    text-transform: uppercase; font-weight: 500; margin: 0 0 28px;
   }
   h1 {
-    font-size: clamp(44px, 7vw, 80px); line-height: 1.02; letter-spacing: -0.035em;
-    font-weight: 800; margin: 0 0 22px;
-    background: linear-gradient(180deg, #FFF 0%, #B8B5B0 100%);
-    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: clamp(54px, 9vw, 96px);
+    line-height: 0.95;
+    letter-spacing: -0.035em;
+    margin: 0 0 28px;
+    color: var(--ink);
+    font-variation-settings: "SOFT" 60, "opsz" 144;
   }
-  h1 .accent {
-    background: linear-gradient(180deg, #FF6B6B 0%, #E03030 100%);
-    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  h1 em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--accent);
+    font-variation-settings: "SOFT" 100, "opsz" 144;
   }
-  .sub {
-    font-size: clamp(16px, 1.6vw, 19px); color: var(--ink-60);
-    max-width: 580px; margin: 0 auto 36px; line-height: 1.5;
+  .lede {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: clamp(19px, 2.2vw, 23px);
+    line-height: 1.5;
+    color: var(--ink-70);
+    max-width: 540px;
+    margin: 0 0 44px;
+    letter-spacing: -0.005em;
   }
-  .cta-row {
-    display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
-    margin-bottom: 16px;
+
+  /* ─── CTA row ─── */
+  .cta {
+    display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+    margin-bottom: 22px;
   }
   .btn {
-    display: inline-flex; align-items: center; gap: 10px;
-    padding: 14px 22px; border-radius: 12px; font-weight: 600; font-size: 15px;
-    text-decoration: none; transition: transform .15s, box-shadow .15s, background .15s;
-    border: 1px solid transparent;
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 13px 22px;
+    border-radius: 999px;
+    font-size: 14px; font-weight: 500;
+    text-decoration: none;
+    transition: all .2s;
   }
   .btn-primary {
-    background: linear-gradient(180deg, #E03030, #C82828);
-    color: white;
-    box-shadow: 0 12px 32px -8px rgba(224,48,48,0.55), inset 0 1px 0 rgba(255,255,255,0.18);
+    background: var(--ink);
+    color: var(--paper);
   }
-  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 18px 40px -8px rgba(224,48,48,0.6), inset 0 1px 0 rgba(255,255,255,0.22); }
-  .btn-secondary {
-    background: var(--ink-07); color: var(--ink);
-    border-color: var(--ink-12);
+  .btn-primary:hover {
+    background: #1B130D;
+    transform: translateY(-1px);
   }
-  .btn-secondary:hover { background: rgba(255,255,255,0.12); }
-  .meta-line {
-    font-size: 12px; color: var(--ink-35); margin-top: 18px;
+  .btn-quiet {
+    background: transparent;
+    color: var(--ink-70);
+    border: 1px solid var(--ink-15);
   }
+  .btn-quiet:hover { color: var(--ink); border-color: var(--ink-30); background: rgba(255,255,255,0.4); }
+  .micro { font-size: 12px; color: var(--ink-50); margin-top: 6px; }
 
   /* ─── Brew snippet ─── */
   .brew {
-    margin: 28px auto 0; max-width: 560px;
-    display: flex; align-items: center; gap: 10px;
-    padding: 14px 18px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--ink-12);
-    border-radius: 14px;
-    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
-    font-size: 13.5px; color: var(--ink);
+    display: inline-flex; align-items: center; gap: 12px;
+    margin-top: 28px;
+    padding: 10px 14px 10px 18px;
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--ink-15);
+    border-radius: 12px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 13px;
+    color: var(--ink);
   }
-  .brew .prompt { color: var(--ink-35); user-select: none; }
-  .brew .cmd { flex: 1; text-align: left; overflow-x: auto; white-space: nowrap; }
+  .brew .pmt { color: var(--ink-30); user-select: none; }
+  .brew .cmd { white-space: nowrap; overflow-x: auto; }
   .brew button {
-    background: transparent; border: 1px solid var(--ink-12); color: var(--ink-60);
-    border-radius: 8px; padding: 6px 12px; font-size: 11px; font-weight: 600;
-    cursor: pointer; transition: all .15s;
-    font-family: inherit;
+    background: transparent; border: none; color: var(--ink-50);
+    font-family: inherit; font-size: 11px; cursor: pointer;
+    padding: 4px 10px; border-radius: 6px; transition: all .15s;
   }
-  .brew button:hover { color: var(--ink); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.05); }
-  .brew button.copied { color: #00C896; border-color: rgba(0,200,150,0.4); }
+  .brew button:hover { color: var(--ink); background: rgba(0,0,0,0.05); }
+  .brew button.copied { color: #2E7D5B; }
 
-  /* ─── Features ─── */
-  section.features { padding: 60px 0 30px; }
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
-  .card {
-    padding: 26px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid var(--ink-12);
-    border-radius: 18px;
-    backdrop-filter: blur(8px);
-    transition: transform .2s, border-color .2s, background .2s;
+  /* ─── Manifesto sections ─── */
+  .stanzas {
+    padding: 18vh 0 12vh;
+    display: flex; flex-direction: column; gap: 7vh;
   }
-  .card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.05); }
-  .card .ico {
-    width: 36px; height: 36px; border-radius: 10px;
-    background: var(--accent-soft); color: var(--accent);
-    display: inline-flex; align-items: center; justify-content: center;
-    margin-bottom: 14px;
+  .stanza {
+    max-width: 560px;
   }
-  .card h3 { margin: 0 0 6px; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
-  .card p { margin: 0; font-size: 13.5px; color: var(--ink-60); line-height: 1.55; }
-
-  /* ─── How it works ─── */
-  section.how { padding: 80px 0 30px; }
-  .section-head { text-align: center; margin-bottom: 38px; }
-  .section-eyebrow {
-    font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em;
-    color: var(--accent); font-weight: 700; margin-bottom: 10px;
+  .stanza .mark {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+    margin: 0 0 14px;
+    font-variation-settings: "SOFT" 100;
   }
-  .section-head h2 {
-    font-size: clamp(28px, 4vw, 38px); margin: 0 0 8px; letter-spacing: -0.025em; font-weight: 800;
+  .stanza h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: clamp(26px, 3.4vw, 36px);
+    letter-spacing: -0.022em;
+    line-height: 1.15;
+    margin: 0 0 14px;
+    color: var(--ink);
+    font-variation-settings: "SOFT" 60, "opsz" 96;
   }
-  .section-head p { color: var(--ink-60); max-width: 540px; margin: 0 auto; font-size: 15px; }
-  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-  @media (max-width: 760px) { .steps { grid-template-columns: 1fr; } }
-  .step {
-    padding: 24px; border-radius: 16px;
-    background: rgba(255,255,255,0.025);
-    border: 1px solid var(--ink-12);
+  .stanza h2 em {
+    font-style: italic;
+    color: var(--accent);
+    font-weight: 300;
   }
-  .step .num {
-    width: 28px; height: 28px; border-radius: 8px;
-    background: rgba(255,255,255,0.08); color: var(--ink);
-    display: inline-flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 13px; margin-bottom: 12px;
+  .stanza p {
+    font-size: 16.5px;
+    color: var(--ink-70);
+    margin: 0;
+    max-width: 520px;
+    line-height: 1.6;
   }
-  .step h4 { margin: 0 0 4px; font-size: 14.5px; font-weight: 700; }
-  .step p { margin: 0; font-size: 13px; color: var(--ink-60); }
-  kbd {
-    display: inline-block; padding: 2px 8px;
-    background: rgba(255,255,255,0.08); border: 1px solid var(--ink-12);
-    border-radius: 6px; font-family: 'JetBrains Mono', monospace;
-    font-size: 11.5px; color: var(--ink);
+  .stanza p + p { margin-top: 10px; }
+  .stanza a {
+    color: var(--ink); text-decoration: none;
+    border-bottom: 1px solid var(--ink-30); transition: all .15s;
   }
-
-  /* ─── Privacy strip ─── */
-  section.privacy { padding: 80px 0; }
-  .privacy-card {
-    padding: 36px;
-    border-radius: 22px;
-    background: linear-gradient(140deg, rgba(0,200,150,0.08) 0%, rgba(255,255,255,0.02) 60%);
-    border: 1px solid var(--ink-12);
-    text-align: center;
-  }
-  .privacy-card h2 { margin: 0 0 12px; font-size: clamp(24px, 3vw, 30px); font-weight: 800; letter-spacing: -0.02em; }
-  .privacy-card p { color: var(--ink-60); max-width: 620px; margin: 0 auto 4px; font-size: 14.5px; }
+  .stanza a:hover { border-bottom-color: var(--ink); }
 
   /* ─── Footer ─── */
-  footer { padding: 56px 0 36px; border-top: 1px solid var(--ink-07); margin-top: 60px; }
-  .foot {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 20px; flex-wrap: wrap; font-size: 12px; color: var(--ink-35);
+  footer {
+    padding: 60px 0 50px;
+    border-top: 1px solid var(--ink-08);
+    margin-top: 60px;
   }
-  .foot a { color: var(--ink-60); text-decoration: none; }
+  .foot {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 14px;
+    font-size: 12px; color: var(--ink-50);
+  }
+  .foot .links { display: flex; gap: 18px; }
+  .foot a {
+    color: var(--ink-70); text-decoration: none;
+    transition: color .15s;
+  }
   .foot a:hover { color: var(--ink); }
+  .foot .heart { font-family: 'Fraunces', serif; font-style: italic; }
 
-  /* utility */
-  .ico svg { display: block; }
+  @media (max-width: 600px) {
+    .wrap { padding: 0 22px; }
+    .hero { padding: 18vh 0 0; }
+    .stanzas { padding: 14vh 0 8vh; gap: 6vh; }
+  }
 </style>
 </head>
 <body>
-  <div class="mesh"></div>
-  <div class="grain"></div>
+  <div class="bg"></div>
 
   <div class="wrap">
+
     <nav>
-      <a href="/unmute-dictation/" class="brand" style="text-decoration:none;color:inherit">
-        <img src="icon.png" alt="unmute" />
-        <span class="brand-name">unmute<span class="brand-dot"></span></span>
-      </a>
-      <div class="links">
-        <a href="https://github.com/arpitpatel25/unmute-dictation">GitHub</a>
-        <a href="https://github.com/arpitpatel25/unmute-dictation/releases">Releases</a>
-        <a href="https://github.com/arpitpatel25/unmute-dictation#readme">Docs</a>
+      <a href="/unmute-dictation/" class="brand">unmute.</a>
+      <div class="right">
+        <a class="link" href="https://github.com/arpitpatel25/unmute-dictation">GitHub</a>
+        <a class="link" href="https://github.com/arpitpatel25/unmute-dictation/discussions">Community</a>
       </div>
     </nav>
 
     <!-- Hero -->
-    <header class="hero">
-      <div class="badge"><span class="pip"></span> v1.2.0 — auto-update enabled</div>
-      <h1>Typing sucks.<br /><span class="accent">Just unmute.</span></h1>
-      <p class="sub">A fast, local-first voice dictation app for macOS. Speak anywhere, and your words appear at the cursor — no window switching, no cleanup.</p>
+    <section class="hero">
+      <p class="eyebrow">Voice dictation for macOS</p>
+      <h1>Typing sucks.<br /><em>Just unmute.</em></h1>
+      <p class="lede">A dictation app you don't have to subscribe to, log into, or trust with your voice. Speak anywhere on your Mac, and your words appear at the cursor.</p>
 
-      <div class="cta-row">
+      <div class="cta">
         <a class="btn btn-primary" href="https://github.com/arpitpatel25/unmute-dictation/releases/download/v1.2.0/unmute-1.2.0-arm64.dmg">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download for macOS
+          Download for Mac
         </a>
-        <a class="btn btn-secondary" href="https://github.com/arpitpatel25/unmute-dictation">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.52-1.34-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.97.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.59.23 2.77.11 3.06.74.81 1.19 1.84 1.19 3.1 0 4.43-2.69 5.41-5.26 5.69.41.35.78 1.05.78 2.12 0 1.53-.01 2.76-.01 3.13 0 .31.21.67.8.55A11.5 11.5 0 0 0 12 .5z"/></svg>
-          View on GitHub
-        </a>
+        <a class="btn btn-quiet" href="https://github.com/arpitpatel25/unmute-dictation">View on GitHub</a>
       </div>
+      <p class="micro">macOS · Apple Silicon · signed &amp; notarized · MIT</p>
 
       <div class="brew">
-        <span class="prompt">$</span>
+        <span class="pmt">$</span>
         <code class="cmd" id="brewCmd">brew install --cask arpitpatel25/unmute/unmute</code>
         <button onclick="copyBrew(this)">Copy</button>
       </div>
-
-      <p class="meta-line">macOS · Apple Silicon · MIT · 135 MB · signed &amp; notarized</p>
-    </header>
-
-    <!-- Features -->
-    <section class="features">
-      <div class="grid">
-        <div class="card">
-          <div class="ico">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          </div>
-          <h3>Dictate anywhere</h3>
-          <p>Tap a key, speak, tap again. Raw text lands exactly where your cursor is — in any app, never auto-formatted unless you ask.</p>
-        </div>
-        <div class="card">
-          <div class="ico">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8L19 13M17.8 6.2L19 5M3 21l9-9M12.2 6.2L11 5"/></svg>
-          </div>
-          <h3>Rewrite by voice</h3>
-          <p>Select text, give an instruction — “make this formal”, “turn into bullets”, “translate to Hindi” — and unmute rewrites it in place.</p>
-        </div>
-        <div class="card">
-          <div class="ico">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
-          </div>
-          <h3>Local-first &amp; private</h3>
-          <p>No unmute account, no server, no telemetry. Audio goes only to Groq via your own API key — or runs fully on-device.</p>
-        </div>
-      </div>
     </section>
 
-    <!-- How it works -->
-    <section class="how">
-      <div class="section-head">
-        <div class="section-eyebrow">Get started in two minutes</div>
-        <h2>How it works</h2>
-        <p>Two clicks of permission, optional key, then dictate anywhere.</p>
-      </div>
-      <div class="steps">
-        <div class="step">
-          <div class="num">1</div>
-          <h4>Install</h4>
-          <p>Download the DMG, drag <em>unmute</em> to Applications, launch.</p>
-        </div>
-        <div class="step">
-          <div class="num">2</div>
-          <h4>Grant permissions</h4>
-          <p>Onboarding walks you through Microphone + Accessibility. Optionally paste a free <a href="https://console.groq.com/keys" style="color:#FF6B6B">Groq API key</a> for the fastest transcription, or skip to use the on-device model.</p>
-        </div>
-        <div class="step">
-          <div class="num">3</div>
-          <h4>Just speak</h4>
-          <p>Tap <kbd>Fn</kbd> anywhere to dictate, <kbd>⇪</kbd> to give voice instructions on selected text. That's it.</p>
-        </div>
-      </div>
-    </section>
+    <!-- Manifesto -->
+    <section class="stanzas">
 
-    <!-- Privacy strip -->
-    <section class="privacy">
-      <div class="privacy-card">
-        <div class="section-eyebrow">Privacy</div>
-        <h2>Your words stay yours.</h2>
-        <p>No accounts, no servers, no tracking. Your Groq key is encrypted in the macOS Keychain and never leaves this device. Audio is sent only to Groq via your own key (over TLS) or processed fully on-device.</p>
-        <p style="margin-top:14px"><a href="https://github.com/arpitpatel25/unmute-dictation" style="color:#FF6B6B;text-decoration:none;font-weight:600">Read the source →</a></p>
+      <div class="stanza">
+        <p class="mark">— Why this exists</p>
+        <h2>Wispr Flow is great. <em>$15/month for dictation isn't.</em></h2>
+        <p>Voice-to-text is mostly a thin wrapper over a model someone else trained. That shouldn't be a subscription — it should be a small app you own.</p>
       </div>
+
+      <div class="stanza">
+        <p class="mark">— Open source</p>
+        <h2>Read every line. <em>Fork it. Make it yours.</em></h2>
+        <p>The whole app is on <a href="https://github.com/arpitpatel25/unmute-dictation">GitHub</a>, MIT licensed. Because this isn't something you should have to pay for, and because trust is verifiable, not promised.</p>
+      </div>
+
+      <div class="stanza">
+        <p class="mark">— Two ways to run it</p>
+        <h2>Bring your Groq key, <em>or stay fully offline.</em></h2>
+        <p>Paste a free <a href="https://console.groq.com/keys">Groq API key</a> for fast, accurate cloud transcription on your own account. Skip the key and it falls back to a model that runs entirely on your Mac.</p>
+        <p>Either way, no unmute account, no unmute server, no middleman.</p>
+      </div>
+
+      <div class="stanza">
+        <p class="mark">— Local-first</p>
+        <h2>Your voice <em>stays yours.</em></h2>
+        <p>Audio is sent only to Groq via your own key — or never leaves your device. Your key is encrypted in the macOS Keychain. No telemetry, no analytics, nothing phones home.</p>
+      </div>
+
+      <div class="stanza">
+        <p class="mark">— How it feels</p>
+        <h2>Tap. Speak. <em>It's there.</em></h2>
+        <p>Tap <strong>Fn</strong> anywhere to dictate. Tap <strong>⇪</strong> to give a voice instruction on text you've selected — “make this formal,” “turn into bullets,” “translate to Hindi.”</p>
+        <p>Sub-second on your existing cursor. No window switching. No copying back. Raw by default, never auto-formatted unless you ask.</p>
+      </div>
+
+      <div class="stanza">
+        <p class="mark">— Community</p>
+        <h2>Built in the open.</h2>
+        <p>Ideas, bugs, and contributions are welcome. <a href="https://github.com/arpitpatel25/unmute-dictation/discussions">Join the discussion</a>, <a href="https://github.com/arpitpatel25/unmute-dictation/issues/new">file an issue</a>, or <a href="https://github.com/arpitpatel25/unmute-dictation/fork">fork the project</a>.</p>
+      </div>
+
     </section>
 
     <footer>
       <div class="foot">
-        <div>© 2026 Arpit Patel · MIT licensed</div>
-        <div>
-          <a href="https://github.com/arpitpatel25/unmute-dictation">GitHub</a> ·
-          <a href="https://github.com/arpitpatel25/unmute-dictation/releases">Releases</a> ·
-          <a href="https://github.com/arpitpatel25/unmute-dictation/issues">Issues</a>
+        <div>© 2026 Arpit Patel · MIT</div>
+        <div class="links">
+          <a href="https://github.com/arpitpatel25/unmute-dictation">Source</a>
+          <a href="https://github.com/arpitpatel25/unmute-dictation/releases">Releases</a>
+          <a href="https://github.com/arpitpatel25/unmute-dictation/discussions">Community</a>
         </div>
       </div>
     </footer>
+
   </div>
 
   <script>
