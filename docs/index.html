@@ -62,8 +62,52 @@
     display: flex; justify-content: space-between; align-items: baseline;
     padding: 36px 0 0;
   }
-  .brand { display: inline-flex; align-items: center; text-decoration: none; }
-  .brand img { height: 26px; width: auto; display: block; opacity: 0.92; }
+  .brand { display: inline-flex; align-items: center; gap: 11px; text-decoration: none; }
+  .brand-icon { width: 32px; height: 32px; border-radius: 8px; display: block; }
+  .brand-mark { height: 36px; width: auto; display: block; }
+  @media (max-width: 600px) {
+    .brand-mark { height: 30px; }
+    .brand-icon { width: 28px; height: 28px; }
+  }
+
+  /* ─── Mac keycap chip (matches the in-app key badge) ─── */
+  .kbd {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 6px 11px; min-height: 30px; min-width: 30px;
+    font-family: 'Inter', system-ui; font-size: 12.5px; font-weight: 700;
+    letter-spacing: -0.01em; color: var(--ink);
+    background: linear-gradient(180deg, #FFFFFF 0%, #EFE8DC 100%);
+    border: 1px solid rgba(42,30,24,0.20);
+    border-radius: 8px;
+    box-shadow:
+      0 3px 0 rgba(42,30,24,0.22),
+      0 4px 10px rgba(42,30,24,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.95);
+    user-select: none; vertical-align: middle;
+  }
+  .kbd-lg {
+    padding: 12px 18px; min-height: 46px; min-width: 46px;
+    font-size: 15px; border-radius: 10px;
+    box-shadow:
+      0 4px 0 rgba(42,30,24,0.22),
+      0 6px 14px rgba(42,30,24,0.10),
+      inset 0 1px 0 rgba(255,255,255,0.95);
+  }
+  .combo { display: inline-flex; align-items: center; gap: 8px; }
+  .combo .arrow { color: var(--ink-30); font-size: 13px; }
+
+  /* ─── Key-rows block (used in the "Two keys" stanza) ─── */
+  .key-block { display: flex; flex-direction: column; gap: 26px; margin-top: 26px; }
+  .key-row { display: flex; align-items: flex-start; gap: 20px; }
+  .key-row > .kbd, .key-row > .combo { flex-shrink: 0; margin-top: 2px; }
+  .key-name {
+    font-family: 'Fraunces', serif; font-weight: 500;
+    font-size: 18px; letter-spacing: -0.01em; color: var(--ink);
+    margin-bottom: 3px;
+    font-variation-settings: "SOFT" 100;
+  }
+  .key-desc { font-size: 15.5px; color: var(--ink-70); line-height: 1.55; }
+  .key-desc em { font-style: italic; color: var(--ink); font-weight: 500; }
   nav .right { display: flex; gap: 24px; font-size: 13px; }
   nav a.link {
     color: var(--ink-70); text-decoration: none;
@@ -235,7 +279,10 @@
   <div class="wrap">
 
     <nav>
-      <a href="/unmute-dictation/" class="brand" aria-label="unmute"><img src="unmute-logo.png" alt="unmute" /></a>
+      <a href="/unmute-dictation/" class="brand" aria-label="unmute">
+        <img src="icon.png" alt="" class="brand-icon" />
+        <img src="unmute-logo.png" alt="unmute" class="brand-mark" />
+      </a>
       <div class="right">
         <a class="link" href="https://github.com/arpitpatel25/unmute-dictation">GitHub</a>
         <a class="link" href="https://github.com/arpitpatel25/unmute-dictation/discussions">Community</a>
@@ -274,17 +321,41 @@
       </div>
 
       <div class="stanza">
-        <p class="mark">— Two things, that's it</p>
+        <p class="mark">— Two keys, two modes</p>
         <h2>Speak. <em>Or speak instructions.</em></h2>
-        <p>One key dictates — raw words, straight to your cursor.</p>
-        <p>The other key gives an instruction — on what you just said, on text you have selected, on anything. Select a Slack thread, hold Caps Lock, say <em>"draft a reply telling them I can't make the call because I'm out sick"</em> — the message lands in the box, ready to send.</p>
+
+        <div class="key-block">
+          <div class="key-row">
+            <span class="kbd kbd-lg">Fn</span>
+            <div>
+              <div class="key-name">Pure dictation</div>
+              <div class="key-desc">Tap once to start, speak, tap again to send. Raw text lands at your cursor in any app — Slack, email, code, anywhere.</div>
+            </div>
+          </div>
+
+          <div class="key-row">
+            <span class="kbd kbd-lg">⇪</span>
+            <div>
+              <div class="key-name">Voice instruction</div>
+              <div class="key-desc">Same rhythm — tap, speak a command, tap. Select a Slack thread and say <em>"reply that I can't make the call, I'm out sick"</em> → it writes the message in the input. Select a paragraph and say <em>"three bullets"</em> → done.</div>
+            </div>
+          </div>
+
+          <div class="key-row">
+            <span class="combo"><span class="kbd">Fn</span><span class="arrow">→</span><span class="kbd">⇪</span></span>
+            <div>
+              <div class="key-name">Chain them</div>
+              <div class="key-desc">Brain-dump with <span class="kbd">Fn</span>, then immediately tap <span class="kbd">⇪</span> and tell it how to shape what you said. Rough thought → polished message in one breath.</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="stanza">
         <p class="mark">— Raw by default</p>
         <h2>You don't format what you paste <em>into a chatbot.</em></h2>
         <p>Most of dictation today ends up in ChatGPT, Claude, Cursor. LLMs don't need your commas. They read raw thought just fine — at the same accuracy.</p>
-        <p>So unmute pastes raw, like a fast typist would. Want it formatted? Hold the instruction key and ask — <em>"clean this up,"</em> <em>"make it three bullets,"</em> <em>"translate to Hindi."</em> Two seconds, done.</p>
+        <p>So unmute pastes raw, like a fast typist would. Want it formatted? Tap <span class="kbd">⇪</span> and ask — <em>"clean this up,"</em> <em>"three bullets,"</em> <em>"translate to Hindi."</em> Two seconds, done.</p>
       </div>
 
       <div class="stanza">
