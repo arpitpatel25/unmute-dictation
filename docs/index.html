@@ -62,16 +62,8 @@
     display: flex; justify-content: space-between; align-items: baseline;
     padding: 36px 0 0;
   }
-  .brand {
-    font-family: 'Fraunces', serif;
-    font-weight: 500;
-    font-style: italic;
-    font-size: 19px;
-    letter-spacing: -0.01em;
-    color: var(--ink);
-    text-decoration: none;
-    font-variation-settings: "SOFT" 100;
-  }
+  .brand { display: inline-flex; align-items: center; text-decoration: none; }
+  .brand img { height: 26px; width: auto; display: block; opacity: 0.92; }
   nav .right { display: flex; gap: 24px; font-size: 13px; }
   nav a.link {
     color: var(--ink-70); text-decoration: none;
@@ -243,7 +235,7 @@
   <div class="wrap">
 
     <nav>
-      <a href="/unmute-dictation/" class="brand">unmute.</a>
+      <a href="/unmute-dictation/" class="brand" aria-label="unmute"><img src="unmute-logo.png" alt="unmute" /></a>
       <div class="right">
         <a class="link" href="https://github.com/arpitpatel25/unmute-dictation">GitHub</a>
         <a class="link" href="https://github.com/arpitpatel25/unmute-dictation/discussions">Community</a>
@@ -252,9 +244,9 @@
 
     <!-- Hero -->
     <section class="hero">
-      <p class="eyebrow">Voice dictation for macOS</p>
+      <p class="eyebrow">For Mac · Free · Open source</p>
       <h1>Typing sucks.<br /><em>Just unmute.</em></h1>
-      <p class="lede">A dictation app you don't have to subscribe to, log into, or trust with your voice. Speak anywhere on your Mac, and your words appear at the cursor.</p>
+      <p class="lede">Dictation that doesn't fall over the moment your Wi-Fi does. No subscription, no account, no telemetry. Just speak — your words land at the cursor.</p>
 
       <div class="cta">
         <a class="btn btn-primary" href="https://github.com/arpitpatel25/unmute-dictation/releases/download/v1.2.0/unmute-1.2.0-arm64.dmg">
@@ -276,40 +268,41 @@
 
       <div class="stanza">
         <p class="mark">— Why this exists</p>
-        <h2>Wispr Flow is great. <em>$15/month for dictation isn't.</em></h2>
-        <p>Voice-to-text is mostly a thin wrapper over a model someone else trained. That shouldn't be a subscription — it should be a small app you own.</p>
+        <h2>Five minutes of talking, <em>then "Something went wrong."</em></h2>
+        <p>You know the moment. Café Wi-Fi flickers. Wispr Flow times out. You retry. Retry. The transcript never comes — your monologue is gone and you start typing again.</p>
+        <p>unmute is built for that moment. Cloud when it's fast, on-device the instant it isn't. You won't notice the switch. You will notice that your words still showed up.</p>
       </div>
 
       <div class="stanza">
-        <p class="mark">— Open source</p>
-        <h2>Read every line. <em>Fork it. Make it yours.</em></h2>
-        <p>The whole app is on <a href="https://github.com/arpitpatel25/unmute-dictation">GitHub</a>, MIT licensed. Because this isn't something you should have to pay for, and because trust is verifiable, not promised.</p>
+        <p class="mark">— Two things, that's it</p>
+        <h2>Speak. <em>Or speak instructions.</em></h2>
+        <p>One key dictates — raw words, straight to your cursor.</p>
+        <p>The other key gives an instruction — on what you just said, on text you have selected, on anything. Select a Slack thread, hold Caps Lock, say <em>"draft a reply telling them I can't make the call because I'm out sick"</em> — the message lands in the box, ready to send.</p>
       </div>
 
       <div class="stanza">
-        <p class="mark">— Two ways to run it</p>
-        <h2>Bring your Groq key, <em>or stay fully offline.</em></h2>
-        <p>Paste a free <a href="https://console.groq.com/keys">Groq API key</a> for fast, accurate cloud transcription on your own account. Skip the key and it falls back to a model that runs entirely on your Mac.</p>
-        <p>Either way, no unmute account, no unmute server, no middleman.</p>
+        <p class="mark">— Raw by default</p>
+        <h2>You don't format what you paste <em>into a chatbot.</em></h2>
+        <p>Most of dictation today ends up in ChatGPT, Claude, Cursor. LLMs don't need your commas. They read raw thought just fine — at the same accuracy.</p>
+        <p>So unmute pastes raw, like a fast typist would. Want it formatted? Hold the instruction key and ask — <em>"clean this up,"</em> <em>"make it three bullets,"</em> <em>"translate to Hindi."</em> Two seconds, done.</p>
       </div>
 
       <div class="stanza">
-        <p class="mark">— Local-first</p>
-        <h2>Your voice <em>stays yours.</em></h2>
-        <p>Audio is sent only to Groq via your own key — or never leaves your device. Your key is encrypted in the macOS Keychain. No telemetry, no analytics, nothing phones home.</p>
+        <p class="mark">— Free, and it should be</p>
+        <h2>$15 a month for a wrapper <em>around someone else's model.</em></h2>
+        <p>The model isn't theirs. The recognition isn't proprietary. It's a small Mac app and an API call. unmute is MIT, free forever. Read every line, fork it, ship your own.</p>
       </div>
 
       <div class="stanza">
-        <p class="mark">— How it feels</p>
-        <h2>Tap. Speak. <em>It's there.</em></h2>
-        <p>Tap <strong>Fn</strong> anywhere to dictate. Tap <strong>⇪</strong> to give a voice instruction on text you've selected — “make this formal,” “turn into bullets,” “translate to Hindi.”</p>
-        <p>Sub-second on your existing cursor. No window switching. No copying back. Raw by default, never auto-formatted unless you ask.</p>
+        <p class="mark">— Yours, not ours</p>
+        <h2>Your voice <em>never visits a server we own.</em></h2>
+        <p>Because we don't have one. Audio goes to Groq via <em>your</em> own API key over TLS — or runs fully on your Mac. Your key sits encrypted in the macOS Keychain. Nothing phones home. Nothing to log into.</p>
       </div>
 
       <div class="stanza">
-        <p class="mark">— Community</p>
-        <h2>Built in the open.</h2>
-        <p>Ideas, bugs, and contributions are welcome. <a href="https://github.com/arpitpatel25/unmute-dictation/discussions">Join the discussion</a>, <a href="https://github.com/arpitpatel25/unmute-dictation/issues/new">file an issue</a>, or <a href="https://github.com/arpitpatel25/unmute-dictation/fork">fork the project</a>.</p>
+        <p class="mark">— Built in the open</p>
+        <h2>Issues, PRs, opinions welcome.</h2>
+        <p><a href="https://github.com/arpitpatel25/unmute-dictation/discussions">Join the discussion</a> · <a href="https://github.com/arpitpatel25/unmute-dictation/issues/new">file an issue</a> · <a href="https://github.com/arpitpatel25/unmute-dictation/fork">fork it</a>.</p>
       </div>
 
     </section>
