@@ -11,7 +11,7 @@ interface UseAudioRecorderReturn {
 }
 
 const MIN_DURATION_MS = 500
-const DEFAULT_MAX_DURATION_MS = 5 * 60 * 1000 // 5 minutes
+const DEFAULT_MAX_DURATION_MS = 10 * 60 * 1000 // 10 minutes
 const MIN_BUDGET_SECONDS = 5 // Don't start recording if budget < 5 seconds
 
 // ─── VAD Chunking Defaults (overridden by server config at recording start) ───
