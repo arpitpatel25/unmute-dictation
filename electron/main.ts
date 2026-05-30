@@ -23,7 +23,7 @@ import { features, updateFeaturesFromConfig } from './featureFlags'
 import { initErrorLogger, broadcastError } from './errorLogger'
 import { setApiKey, clearApiKey, hasApiKey, getMaskedKey } from './keyStore'
 import { validateApiKey } from './groq'
-import { setupAutoUpdater } from './autoUpdater'
+import { setupAutoUpdater, quitAndInstall } from './autoUpdater'
 import {
   createMainWindow,
   createWidgetWindow,
@@ -766,6 +766,9 @@ function setupIPC(): void {
       shell.openExternal('x-apple.systempreferences:com.apple.preference.keyboard')
     })
   })
+
+  // Renderer asks the updater to apply the downloaded build now.
+  ipcMain.on('updater:quit-and-install', () => quitAndInstall())
 
   // Whether the app is trusted for Accessibility (needed for global key
   // detection AND pasting at the cursor). Pass prompt=false to just check.

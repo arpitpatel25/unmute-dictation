@@ -7,12 +7,29 @@
 // All failures are logged and swallowed — auto-update is best-effort and must
 // never crash or block the running app.
 
-import { app } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { autoUpdater } from 'electron-updater'
 
 const RECHECK_INTERVAL_MS = 6 * 60 * 60 * 1000 // 6 hours
 
 let initialised = false
+
+function broadcastToWindows(channel: string, ...args: unknown[]): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    try { win.webContents.send(channel, ...args) } catch { /* window closed */ }
+  }
+}
+
+/**
+ * Tell electron-updater to install the downloaded update and relaunch.
+ * Called from the renderer when the user clicks "Restart" on the in-app
+ * update banner.
+ */
+export function quitAndInstall(): void {
+  try { autoUpdater.quitAndInstall() } catch (err) {
+    console.warn('[updater] quitAndInstall failed:', err instanceof Error ? err.message : err)
+  }
+}
 
 export function setupAutoUpdater(): void {
   if (initialised) return
@@ -35,15 +52,19 @@ export function setupAutoUpdater(): void {
     const pct = Math.round(p.percent)
     if (pct % 10 === 0) console.log(`[updater] downloading ${pct}%`)
   })
-  autoUpdater.on('update-downloaded', (info) =>
+  autoUpdater.on('update-downloaded', (info) => {
     console.log(`[updater] downloaded ${info.version} — will install on next quit`)
-  )
+    // Tell the UI so it can show a "Restart to update" banner. The user can
+    // still ignore it — autoInstallOnAppQuit will pick it up on next quit.
+    broadcastToWindows('updater:downloaded', info.version)
+  })
   autoUpdater.on('error', (err) =>
     console.warn('[updater] error:', err instanceof Error ? err.message : err)
   )
 
   // First check soon after launch, then every 6 hours while the app is open.
-  const kick = () => autoUpdater.checkForUpdatesAndNotify().catch((err) =>
+  // Use checkForUpdates() (not …AndNotify) — we surface our own banner now.
+  const kick = () => autoUpdater.checkForUpdates().catch((err) =>
     console.warn('[updater] check failed:', err instanceof Error ? err.message : err)
   )
   setTimeout(kick, 10_000) // give the UI a moment to settle

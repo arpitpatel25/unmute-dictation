@@ -14,6 +14,7 @@ export default function App() {
   const [view, setView] = useState<AppView | 'loading'>('loading')
   const [activeTab, setActiveTab] = useState<Tab>('history')
   const [dictationKey, setDictationKey] = useState<'fn' | 'right-option'>('fn')
+  const [pendingUpdate, setPendingUpdate] = useState<string | null>(null)
 
   useEffect(() => {
     // Load dictation key setting (for the pro-tip hint)
@@ -24,6 +25,9 @@ export default function App() {
     // Onboarding gate — no sign-in in local BYO-key mode
     const onboardingDone = localStorage.getItem('unmute_onboarding_complete')
     setView(onboardingDone ? 'main' : 'onboarding')
+
+    // Listen for downloaded updates and surface a "Restart" banner.
+    window.electronAPI?.onUpdateDownloaded((version) => setPendingUpdate(version))
   }, [])
 
   function handleOnboardingComplete() {
@@ -52,6 +56,30 @@ export default function App() {
     <div className="flex h-screen bg-cream">
       {/* Titlebar drag region */}
       <div className="titlebar-drag absolute top-0 left-0 right-0 h-8 z-10" />
+
+      {/* Update-ready banner */}
+      {pendingUpdate && (
+        <div className="absolute top-8 left-0 right-0 z-20 flex justify-center pointer-events-none">
+          <div className="pointer-events-auto mt-2 flex items-center gap-3 px-4 py-2.5 rounded-full bg-ink text-white shadow-lg border border-black/30 animate-fade-up-in">
+            <span className="text-[12px] font-medium">
+              <span className="font-bold">unmute {pendingUpdate}</span> ready to install.
+            </span>
+            <button
+              onClick={() => window.electronAPI.restartToUpdate()}
+              className="text-[12px] font-semibold px-3 py-1 rounded-full bg-white text-ink hover:opacity-90 transition-opacity"
+            >
+              Restart now
+            </button>
+            <button
+              onClick={() => setPendingUpdate(null)}
+              className="text-[16px] leading-none text-white/60 hover:text-white px-1"
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Sidebar */}
       <nav className="w-[220px] min-w-[220px] border-r border-border pt-12 px-2 flex flex-col bg-cream-mid">

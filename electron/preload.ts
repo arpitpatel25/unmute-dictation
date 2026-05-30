@@ -100,6 +100,14 @@ const electronAPI = {
   openKeyboardSettings: () => {
     ipcRenderer.send('permissions:open-keyboard-settings')
   },
+
+  // Auto-update
+  onUpdateDownloaded: (callback: (version: string) => void) => {
+    ipcRenderer.on('updater:downloaded', (_event, version) => callback(version))
+  },
+  restartToUpdate: () => {
+    ipcRenderer.send('updater:quit-and-install')
+  },
   getAccessibilityStatus: (): Promise<boolean> => ipcRenderer.invoke('permissions:accessibility-status'),
   requestAccessibility: (): Promise<boolean> => ipcRenderer.invoke('permissions:request-accessibility'),
 

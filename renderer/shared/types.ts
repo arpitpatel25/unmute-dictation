@@ -74,6 +74,9 @@ export interface ElectronAPI {
   openMicSettings: () => void
   openAccessibilitySettings: () => void
   openKeyboardSettings: () => void
+  // Auto-update
+  onUpdateDownloaded: (callback: (version: string) => void) => void
+  restartToUpdate: () => void
   getAccessibilityStatus: () => Promise<boolean>
   requestAccessibility: () => Promise<boolean>
   setLLMProvider: (provider: 'cloud' | 'local-llm') => void
