@@ -7,6 +7,29 @@ let mainWindow: BrowserWindow | null = null
 let hudWindow: BrowserWindow | null = null
 let hideTimeout: ReturnType<typeof setTimeout> | null = null
 
+// Resolves once the widget renderer has mounted and registered its IPC
+// listeners. showHUD() awaits this so the window never becomes visible
+// before the React tree can paint the active state — which would otherwise
+// show a transparent (invisible) panel while recording proceeds.
+let hudReadyResolve: (() => void) | null = null
+let hudReadyPromise: Promise<void> = new Promise<void>((resolve) => {
+  hudReadyResolve = resolve
+})
+
+export function markHUDReady(): void {
+  if (hudReadyResolve) {
+    hudReadyResolve()
+    hudReadyResolve = null
+  }
+}
+
+function resetHUDReady(): void {
+  if (hudReadyResolve) return
+  hudReadyPromise = new Promise<void>((resolve) => {
+    hudReadyResolve = resolve
+  })
+}
+
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow
 }
@@ -166,11 +189,17 @@ export function createHUDWindow(): BrowserWindow {
     hudWindow = null
   })
 
+  // Reset the ready promise on every reload (dev HMR, crash recovery) so the
+  // next showHUD() waits for the fresh renderer to re-register its listeners.
+  hudWindow.webContents.on('did-start-loading', resetHUDReady)
+
   return hudWindow
 }
 
-/** Show the HUD — called when recording starts */
-export function showHUD(): void {
+/** Show the HUD — called when recording starts.
+ *  Awaits renderer readiness so the panel never appears blank on cold start. */
+export async function showHUD(): Promise<void> {
+  await hudReadyPromise
   if (!hudWindow) return
 
   // Cancel any pending hide animation

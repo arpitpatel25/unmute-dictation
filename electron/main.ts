@@ -29,7 +29,8 @@ import {
   createWidgetWindow,
   showMainWindow,
   getMainWindow,
-  setHUDPosition
+  setHUDPosition,
+  markHUDReady
 } from './windowManager'
 
 // Simple JSON settings persistence
@@ -769,6 +770,10 @@ function setupIPC(): void {
 
   // Renderer asks the updater to apply the downloaded build now.
   ipcMain.on('updater:quit-and-install', () => quitAndInstall())
+
+  // Widget renderer signals it has mounted and registered IPC listeners.
+  // Gates showHUD() so the panel never appears blank on cold start.
+  ipcMain.on('widget:ready', () => markHUDReady())
 
   // Whether the app is trusted for Accessibility (needed for global key
   // detection AND pasting at the cursor). Pass prompt=false to just check.
