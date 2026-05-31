@@ -220,8 +220,9 @@ class SessionManager {
   }
 
   setSTTProvider(provider: 'cloud' | 'local' | 'faster-whisper' | 'cartesia' | 'sarvam' | 'dual-whisper'): void {
-    // Force cloud when local models disabled
-    const effective = (!features.localModels && (provider === 'local' || provider === 'faster-whisper')) ? 'cloud' : provider
+    // 'local' (whisper.cpp) is user-selectable always — binary + model ship with the app.
+    // 'faster-whisper' still requires the dev feature flag (needs separate Python setup).
+    const effective = (!features.localModels && provider === 'faster-whisper') ? 'cloud' : provider
     console.log('[session] STT provider set to:', effective)
     this.sttProvider = effective
   }
@@ -516,7 +517,7 @@ class SessionManager {
   private async transcribeChunk(buffer: Buffer, chunkIndex: number): Promise<string> {
     const t0 = Date.now()
     const effectiveSTT = this.getEffectiveSTTProvider()
-    const useLocalWhisper = features.localModels && effectiveSTT === 'local' && whisperManager.isModelReady() && whisperManager.isBinaryReady()
+    const useLocalWhisper = effectiveSTT === 'local' && whisperManager.isModelReady() && whisperManager.isBinaryReady()
     const useFasterWhisper = features.localModels && effectiveSTT === 'faster-whisper' && fasterWhisperManager.isReady()
     const useCartesia = effectiveSTT === 'cartesia'
     const useSarvam = effectiveSTT === 'sarvam'
@@ -966,7 +967,7 @@ class SessionManager {
 
       // Transcribe audio(s) — cloud (groq/cartesia/sarvam), local whisper.cpp, or faster-whisper
       const effectiveSTT = this.getEffectiveSTTProvider()
-      const useLocalWhisper = features.localModels && effectiveSTT === 'local' && whisperManager.isModelReady() && whisperManager.isBinaryReady()
+      const useLocalWhisper = effectiveSTT === 'local' && whisperManager.isModelReady() && whisperManager.isBinaryReady()
       const useFasterWhisper = features.localModels && effectiveSTT === 'faster-whisper' && fasterWhisperManager.isReady()
       const useCartesia = effectiveSTT === 'cartesia'
       const useSarvam = effectiveSTT === 'sarvam'
