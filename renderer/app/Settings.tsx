@@ -22,6 +22,12 @@ export default function Settings({ onDictationKeyChange }: SettingsProps = {}) {
   const [dictationKey, setDictationKey] = useState<'fn' | 'right-option'>('fn')
   const [activationMode, setActivationMode] = useState<'tap-toggle' | 'push-to-talk' | 'double-tap-push'>('tap-toggle')
 
+  // Transcription engine — cloud (Groq) vs on-device (whisper.cpp)
+  const [useCloudSTT, setUseCloudSTT] = useState(true)
+  const [whisperModelReady, setWhisperModelReady] = useState(false)
+  const [whisperDownloading, setWhisperDownloading] = useState(false)
+  const [whisperProgress, setWhisperProgress] = useState(0)
+
   // Groq API key (BYO-key)
   const [groqKeyInput, setGroqKeyInput] = useState('')
   const [groqKeyMasked, setGroqKeyMasked] = useState<string | null>(null)
@@ -92,6 +98,14 @@ export default function Settings({ onDictationKeyChange }: SettingsProps = {}) {
       setGroqKeyMasked(s.hasKey ? s.masked : null)
     })
     window.electronAPI.getUsage().then(setUsage).catch(() => {})
+    window.electronAPI.getSTTProvider().then((v: string) => {
+      setUseCloudSTT(v !== 'local')
+    })
+    window.electronAPI.getWhisperModelStatus().then(setWhisperModelReady).catch(() => {})
+    window.electronAPI.onWhisperDownloadProgress((p: number) => setWhisperProgress(p))
+    return () => {
+      window.electronAPI.removeAllListeners('whisper:download-progress')
+    }
   }, [])
 
   async function handleResetUsage() {
@@ -183,6 +197,24 @@ export default function Settings({ onDictationKeyChange }: SettingsProps = {}) {
     const mode = value as 'tap-toggle' | 'push-to-talk' | 'double-tap-push'
     setActivationMode(mode)
     window.electronAPI.setActivationMode(mode)
+  }
+
+  function handleCloudSTTChange(value: boolean) {
+    setUseCloudSTT(value)
+    window.electronAPI.setSTTProvider(value ? 'cloud' : 'local')
+  }
+
+  async function handleDownloadWhisper() {
+    if (whisperDownloading) return
+    setWhisperDownloading(true)
+    setWhisperProgress(0)
+    try {
+      const res = await window.electronAPI.downloadWhisperModel()
+      if (res.success) setWhisperModelReady(true)
+    } catch { /* swallow — UI stays in idle state */ }
+    finally {
+      setWhisperDownloading(false)
+    }
   }
 
   return (
@@ -437,6 +469,34 @@ export default function Settings({ onDictationKeyChange }: SettingsProps = {}) {
       {/* ═══ Behavior ═══ */}
       <SectionHeader icon={<BehaviorIcon />} title="Behavior" />
       <div className="bg-surface-2 border border-border rounded-2xl overflow-hidden mb-3 shadow-sm">
+        <SettingRow
+          label="Use Groq cloud transcription"
+          description={
+            useCloudSTT
+              ? 'Fast cloud transcription via Groq. Requires API key + internet.'
+              : whisperModelReady
+                ? 'On-device whisper.cpp. Works offline, slower than cloud.'
+                : 'On-device whisper.cpp — model not downloaded yet.'
+          }
+        >
+          <Toggle checked={useCloudSTT} onChange={handleCloudSTTChange} />
+        </SettingRow>
+        {!useCloudSTT && !whisperModelReady && (
+          <div className="px-4 pb-3 -mt-1 flex items-center gap-3">
+            {whisperDownloading ? (
+              <span className="text-[12px] text-ink-60">
+                Downloading model{whisperProgress > 0 ? ` — ${Math.round(whisperProgress)}%` : '…'}
+              </span>
+            ) : (
+              <button
+                onClick={handleDownloadWhisper}
+                className="text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-ink text-white hover:opacity-90 transition-opacity"
+              >
+                Download model (~75MB)
+              </button>
+            )}
+          </div>
+        )}
         <SettingRow label="Output mode" description="How output is delivered">
           <SegmentedControl
             options={[

@@ -67,7 +67,9 @@ function restoreSettings(): void {
   }
   if (settings.sttProvider === 'cloud' || settings.sttProvider === 'local' || settings.sttProvider === 'faster-whisper' || settings.sttProvider === 'cartesia' || settings.sttProvider === 'sarvam' || settings.sttProvider === 'dual-whisper') {
     let sttValue = settings.sttProvider
-    if (!features.localModels && (sttValue === 'local' || sttValue === 'faster-whisper')) {
+    // 'local' is user-selectable always (whisper.cpp ships with the app).
+    // 'faster-whisper' still requires the dev flag (needs Python setup).
+    if (!features.localModels && sttValue === 'faster-whisper') {
       console.log(`[main] features.localModels=false — normalizing STT provider ${sttValue} → cloud`)
       sttValue = 'cloud'
       saveSetting('sttProvider', 'cloud')
