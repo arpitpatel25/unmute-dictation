@@ -77,6 +77,8 @@ export interface ElectronAPI {
   // Auto-update
   onUpdateDownloaded: (callback: (version: string) => void) => void
   restartToUpdate: () => void
+  // Widget mount signal
+  widgetReady: () => void
   getAccessibilityStatus: () => Promise<boolean>
   requestAccessibility: () => Promise<boolean>
   setLLMProvider: (provider: 'cloud' | 'local-llm') => void

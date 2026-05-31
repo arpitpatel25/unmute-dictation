@@ -156,6 +156,10 @@ export default function WidgetApp() {
       setEngineNotice(reason)
     })
 
+    // Tell main the widget is mounted; showHUD() is gated on this so the
+    // panel never appears blank on cold start.
+    api.widgetReady()
+
     return () => {
       api.removeAllListeners('recording:start')
       api.removeAllListeners('recording:stop')

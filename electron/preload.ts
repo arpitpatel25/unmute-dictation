@@ -108,6 +108,11 @@ const electronAPI = {
   restartToUpdate: () => {
     ipcRenderer.send('updater:quit-and-install')
   },
+
+  // Widget mount signal — main process gates showHUD() on this.
+  widgetReady: () => {
+    ipcRenderer.send('widget:ready')
+  },
   getAccessibilityStatus: (): Promise<boolean> => ipcRenderer.invoke('permissions:accessibility-status'),
   requestAccessibility: (): Promise<boolean> => ipcRenderer.invoke('permissions:request-accessibility'),
 
